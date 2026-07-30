@@ -19,12 +19,22 @@ insert into public.prizes (name, description, required_points, sort_order) value
   ('Viagem Internacional',  'Viagem com acompanhante para a convenção anual.',         30000, 5)
 on conflict (name) do nothing;
 
-insert into public.marketing_materials (title, description, type, file_url, width, height, sort_order) values
-  ('Banner Stories 1080x1920', 'Story vertical para Instagram e WhatsApp.', 'banner', '/materials/story-01.png', 1080, 1920, 1),
-  ('Post Feed 1080x1080',      'Post quadrado para o feed.',                'banner', '/materials/feed-01.png',  1080, 1080, 2),
-  ('Banner Horizontal 1200x628','Capa para Facebook e LinkedIn.',           'banner', '/materials/cover-01.png', 1200,  628, 3),
-  ('Vídeo de Apresentação',    'Vídeo curto explicando a oportunidade.',    'video',  '/materials/pitch.mp4',    1080, 1920, 4)
-on conflict (title) do nothing;
+-- Materiais de marketing entram vazios de propósito: os arquivos são arte
+-- real da sua marca, e apontar para caminhos inexistentes deixaria a galeria
+-- do afiliado com imagens quebradas. A tela mostra um estado vazio limpo até
+-- você cadastrar os seus.
+--
+-- Para adicionar: suba os arquivos no Supabase Storage (bucket público
+-- `materials`), copie a URL pública e informe as dimensões reais do arquivo
+-- — a galeria usa width/height para reservar o espaço sem distorcer a arte.
+--
+-- insert into public.marketing_materials
+--   (title, description, type, file_url, width, height, sort_order)
+-- values
+--   ('Banner Stories', 'Story vertical para Instagram.', 'banner',
+--    'https://SEU-PROJETO.supabase.co/storage/v1/object/public/materials/story-01.png',
+--    1080, 1920, 1)
+-- on conflict (title) do nothing;
 
 -- Catálogo da loja. points_value é o que a venda injeta na rede
 -- quando o admin fecha o pedido.
@@ -38,3 +48,11 @@ on conflict (sku) do nothing;
 
 -- Após criar o usuário no Auth, promova-o a admin:
 -- update public.users set is_admin = true where username = 'seu_usuario';
+
+-- Identidade da marca. Editável em /admin/configuracoes → "Identidade da marca".
+-- Só define se ainda estiver no padrão, para não sobrescrever uma
+-- personalização já feita pelo admin ao reaplicar o seed.
+update public.settings
+   set brand_name = 'Shopurbanus MCI'
+ where id = true
+   and brand_name in ('Shopurbanus MCI', '');

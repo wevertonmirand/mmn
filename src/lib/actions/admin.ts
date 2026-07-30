@@ -75,7 +75,15 @@ export async function upsertPrizeAction(formData: FormData): Promise<ActionResul
 
 /** Master switch da gamificação + theme switcher global. */
 export async function updateSettingsAction(
-  patch: { gamification_enabled?: boolean; theme?: ThemeName; min_products_monthly?: number },
+  patch: {
+    gamification_enabled?: boolean
+    theme?: ThemeName
+    min_products_monthly?: number
+    brand_name?: string
+    brand_tagline?: string | null
+    logo_url?: string | null
+    logo_icon_url?: string | null
+  },
 ): Promise<ActionResult> {
   const supabase = await createClient()
 
@@ -84,6 +92,22 @@ export async function updateSettingsAction(
     (!Number.isInteger(patch.min_products_monthly) || patch.min_products_monthly < 0)
   ) {
     return { ok: false, error: 'Mínimo de produtos deve ser um inteiro não negativo.' }
+  }
+
+  if (patch.brand_name !== undefined && !patch.brand_name.trim()) {
+    return { ok: false, error: 'O nome da marca não pode ficar em branco.' }
+  }
+
+  // Uma URL inválida deixaria o logo quebrado em toda a aplicação.
+  for (const field of ['logo_url', 'logo_icon_url'] as const) {
+    const value = patch[field]
+    if (!value) continue
+    try {
+      const { protocol } = new URL(value)
+      if (protocol !== 'https:' && protocol !== 'http:') throw new Error()
+    } catch {
+      return { ok: false, error: 'Informe uma URL de imagem válida, começando com https://' }
+    }
   }
 
   const { error } = await supabase.from('settings').update(patch).eq('id', true)

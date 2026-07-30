@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { BrandMark } from '@/components/ui/BrandMark'
+import { getBranding } from '@/lib/branding'
 
 const NAV = [
   { href: '/admin', label: 'Visão geral' },
@@ -26,10 +28,17 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // 404 em vez de redirect: não revela a existência da área administrativa.
   if (!profile?.is_admin) notFound()
 
+  const { brand_name, logo_url } = await getBranding()
+
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6">
       <header className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Administração</h1>
+        <div className="flex items-center justify-between gap-3">
+          <BrandMark name={brand_name} logoUrl={logo_url} layout="inline" />
+          <span className="shrink-0 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-gray-600">
+            Administração
+          </span>
+        </div>
         <nav className="mt-4 flex gap-2 overflow-x-auto pb-1">
           {NAV.map(({ href, label }) => (
             <Link

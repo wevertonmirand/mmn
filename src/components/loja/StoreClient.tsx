@@ -18,11 +18,12 @@ const FIELD =
 interface StoreClientProps {
   products: Product[]
   customer: Customer | null
-  /** username do afiliado do link — atribui o pedido a ele */
-  ref: string | null
+  /** username do afiliado do link — atribui o pedido a ele.
+   *  Não pode se chamar `ref`: é prop reservada do React. */
+  sponsorUsername: string | null
 }
 
-export function StoreClient({ products, customer, ref }: StoreClientProps) {
+export function StoreClient({ products, customer, sponsorUsername }: StoreClientProps) {
   const [cart, setCart] = useState<CartLine[]>([])
   const [open, setOpen] = useState(false)
   const [placed, setPlaced] = useState<PlacedOrder | null>(null)
@@ -91,7 +92,7 @@ export function StoreClient({ products, customer, ref }: StoreClientProps) {
         String(formData.get('phone') ?? ''),
         String(formData.get('address') ?? ''),
         String(formData.get('notes') ?? ''),
-        ref,
+        sponsorUsername,
       )
       if (result.ok) {
         setPlaced(result.order)
@@ -290,7 +291,9 @@ export function StoreClient({ products, customer, ref }: StoreClientProps) {
                   Crie sua conta para enviar o pedido. Seu carrinho fica salvo.
                 </p>
                 <Link
-                  href={ref ? `/cliente/cadastro?ref=${ref}` : '/cliente/cadastro'}
+                  href={
+                    sponsorUsername ? `/cliente/cadastro?ref=${sponsorUsername}` : '/cliente/cadastro'
+                  }
                   className="block"
                 >
                   <Button className="w-full">Criar conta e pedir</Button>
@@ -306,9 +309,9 @@ export function StoreClient({ products, customer, ref }: StoreClientProps) {
         </div>
       )}
 
-      {ref && (
+      {sponsorUsername && (
         <p className={cn('mt-4 text-center text-xs text-gray-400', open && 'hidden')}>
-          Indicado por <Badge tone="slate">@{ref}</Badge>
+          Indicado por <Badge tone="slate">@{sponsorUsername}</Badge>
         </p>
       )}
     </>

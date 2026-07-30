@@ -1,34 +1,348 @@
-# Plataforma de Afiliados (Unilevel)
+# Plataforma de Afiliados (Unilevel) + Loja
 
-Next.js 14 + Supabase. Rede unilevel com lateralidade infinita, 5 níveis de
-pontuação, compressão dinâmica, painel do afiliado mobile-first (PWA) e painel
-administrativo restrito.
+Next.js 16 + Supabase. Rede unilevel com lateralidade infinita, 5 níveis de
+pontuação, compressão dinâmica, painel do afiliado mobile-first (PWA), painel
+administrativo restrito e loja onde o cliente faz o pedido e o admin fecha a
+venda no contato.
 
 ## Stack
 
-- **Next.js 14** (App Router, Server Components, Server Actions)
+- **Next.js 16** (App Router, Server Components, Server Actions)
+- **React 19**
 - **Supabase** (Postgres + Auth + RLS)
 - **Tailwind CSS** — design system branco e dourado (`#D4AF37`)
 
-## Rodando
+---
+
+# Instalação passo a passo
+
+Do zero até o app rodando. Tempo estimado: 15 minutos.
+
+## Pré-requisitos
+
+| Ferramenta | Versão | Onde |
+|---|---|---|
+| Node.js | 18.18+ (recomendado 20 LTS) | https://nodejs.org |
+| Git | qualquer | https://git-scm.com/download/win |
+| Conta Supabase | gratuita | https://supabase.com |
+| Conta Vercel | gratuita, só para publicar | https://vercel.com |
+
+Confirme no terminal antes de seguir:
 
 ```bash
-npm install
-cp .env.example .env.local   # preencha URL e anon key do Supabase
+node --version    # v18.18 ou maior
+git --version
+```
+
+## Passo 1 — Clonar o repositório
+
+Este é um repositório **privado**, então o `git clone` precisa de autenticação.
+Escolha uma das opções.
+
+**Opção A — GitHub CLI (mais simples)**
+
+```bash
+gh auth login
+gh repo clone SEU_USUARIO/SEU_REPO app
+cd app
+```
+
+**Opção B — HTTPS com Personal Access Token**
+
+Gere um token em GitHub → *Settings* → *Developer settings* →
+*Personal access tokens* → *Tokens (classic)*, marcando o escopo **`repo`**.
+
+```bash
+git clone https://github.com/SEU_USUARIO/SEU_REPO.git app
+cd app
+```
+
+Quando pedir a senha, cole o **token** (a senha da conta não funciona mais).
+
+**Opção C — SSH**
+
+```bash
+git clone git@github.com:SEU_USUARIO/SEU_REPO.git app
+cd app
+```
+
+Exige uma chave SSH cadastrada em GitHub → *Settings* → *SSH and GPG keys*.
+
+## Passo 2 — Instalar dependências
+
+```bash
+npm ci
+```
+
+Use `npm ci`, não `npm install`: ele instala exatamente as versões do
+`package-lock.json`, que é o que foi testado. Se você já tinha uma pasta
+`node_modules` de antes, apague-a primeiro.
+
+Avisos de `deprecated` em pacotes do ESLint são normais e não afetam o app.
+Para conferir o que importa:
+
+```bash
+npm audit --omit=dev    # deve reportar 0 vulnerabilities
+```
+
+## Passo 3 — Criar o projeto no Supabase
+
+1. Entre em https://supabase.com/dashboard e clique em **New project**
+2. Preencha:
+   - **Name** — o nome que quiser
+   - **Database Password** — gere uma forte e **guarde**; ela não é exibida de novo
+   - **Region** — a mais próxima dos seus usuários (`South America (São Paulo)` no Brasil)
+3. Clique em **Create new project** e aguarde 1–2 minutos
+
+## Passo 4 — Aplicar o banco de dados
+
+O SQL cria tabelas, funções, políticas de segurança e os dados iniciais.
+Duas formas — a manual é a mais garantida.
+
+### Forma A — SQL Editor (manual, recomendada na primeira vez)
+
+No painel do Supabase, abra **SQL Editor** → **New query**. Cole e rode o
+conteúdo de cada arquivo, **nesta ordem**:
+
+1. `supabase/migrations/20260730000100_schema.sql`
+2. `supabase/migrations/20260730000200_functions.sql`
+3. `supabase/migrations/20260730000300_rls.sql`
+4. `supabase/migrations/20260730000400_admin_views.sql`
+5. `supabase/migrations/20260730000500_store.sql`
+6. `supabase/migrations/20260730000600_branding.sql`
+7. `supabase/seed.sql`
+
+Pode rodar cada um separadamente ou tudo de uma vez. O SQL é **idempotente**:
+rodar de novo não duplica nada nem dá erro.
+
+### Forma B — Supabase CLI
+
+```bash
+npx supabase login
+npx supabase link --project-ref SEU_PROJECT_REF
+npm run db:push
+```
+
+O `PROJECT_REF` é o código na URL do painel:
+`https://supabase.com/dashboard/project/`**`abcdefghijklmnop`**
+
+> ⚠️ **Não use `npm run db:reset` em um banco com dados** — ele apaga tudo e
+> recria. Serve apenas para desenvolvimento local.
+
+### Conferir se deu certo
+
+Ainda no SQL Editor:
+
+```sql
+select count(*) from public.ranks;      -- esperado: 6
+select count(*) from public.products;   -- esperado: 5
+select count(*) from public.prizes;     -- esperado: 5
+```
+
+Se algum der `relation does not exist`, algum arquivo não foi aplicado — repita
+a ordem do Passo 4.
+
+## Passo 5 — Configurar as credenciais locais
+
+No painel do Supabase, vá em **Settings** → **API** e copie:
+
+- **Project URL** — algo como `https://abcdefgh.supabase.co`
+- **Publishable key** — começa com `sb_publishable_...`
+
+Crie o arquivo `.env.local` na raiz do projeto:
+
+```bash
+cp .env.example .env.local
+```
+
+No Windows, se `cp` não existir:
+
+```cmd
+copy .env.example .env.local
+notepad .env.local
+```
+
+Preencha:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://SEU-PROJETO.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_sua_chave
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
+
+> 🔒 A *publishable key* é **feita para ser pública** — ela vai no bundle do
+> browser, e quem protege os dados é o RLS. Já a **`sb_secret_...` /
+> `service_role` ignora o RLS por completo**: nunca a coloque em variável
+> `NEXT_PUBLIC_*`, no código ou no repositório. O app recusa iniciar se
+> detectar uma.
+
+`.env.local` está no `.gitignore` e nunca é enviado ao repositório.
+
+## Passo 6 — Rodar
+
+```bash
 npm run dev
 ```
 
-Aplicar o banco:
+Abra http://localhost:3000. Você deve cair na vitrine (`/loja`), já com os 5
+produtos de exemplo.
 
-```bash
-supabase db reset            # roda migrations + seed
-```
+## Passo 7 — Criar seu usuário admin
 
-Depois de criar seu usuário no Auth, promova-o a administrador:
+1. Acesse http://localhost:3000/cadastro e crie sua conta de **afiliado**
+2. No SQL Editor do Supabase, promova-a:
 
 ```sql
 update public.users set is_admin = true where username = 'seu_usuario';
 ```
+
+3. Recarregue a página. `/admin` passa a responder (antes dava 404 de propósito,
+   para não revelar a área a quem não é admin)
+
+Pronto — o app está funcionando localmente.
+
+---
+
+# Publicar na Vercel
+
+## Passo 1 — Importar o projeto
+
+1. Entre em https://vercel.com/new
+2. Em **Import Git Repository**, autorize o acesso à sua conta GitHub
+   (para repositório privado, conceda acesso a ele na tela de permissões)
+3. Selecione o repositório
+
+Não mude *Framework Preset*, *Build Command* nem *Output Directory* — a Vercel
+detecta Next.js sozinha.
+
+## Passo 2 — Variáveis de ambiente (faça ANTES do primeiro deploy)
+
+Ainda na tela de import, abra **Environment Variables** e adicione as três:
+
+| Name | Value |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://SEU-PROJETO.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | `sb_publishable_...` |
+| `NEXT_PUBLIC_SITE_URL` | `https://seu-projeto.vercel.app` |
+
+> ⚠️ **Isto precisa vir antes do build.** Variáveis `NEXT_PUBLIC_*` são
+> embutidas no bundle do browser **no momento do build**. Se você publicar sem
+> elas e adicioná-las depois, o app continua quebrado até um **Redeploy** —
+> adicionar a variável não basta.
+
+Marque as três para *Production*, *Preview* e *Development*.
+
+Ainda não sabe a URL final? Publique, copie a URL que a Vercel gerar, corrija
+`NEXT_PUBLIC_SITE_URL` e faça **Redeploy**.
+
+## Passo 3 — Deploy
+
+Clique em **Deploy** e aguarde ~2 minutos.
+
+## Passo 4 — Configurar as URLs no Supabase
+
+Sem este passo a confirmação de e-mail e a recuperação de senha redirecionam
+para `localhost` e falham em produção.
+
+No painel do Supabase, **Authentication** → **URL Configuration**:
+
+- **Site URL** — `https://seu-projeto.vercel.app`
+- **Redirect URLs** — adicione:
+  - `https://seu-projeto.vercel.app/**`
+  - `http://localhost:3000/**` (para continuar desenvolvendo)
+
+## Passo 5 — Conferir em produção
+
+Abra a URL da Vercel e verifique:
+
+- `/loja` — vitrine com os produtos
+- `/cadastro` — criar conta de afiliado
+- `/login` — entrar
+- `/admin` — só para quem tem `is_admin = true`
+
+### Domínio próprio (opcional)
+
+Em **Settings** → **Domains** na Vercel, adicione seu domínio e siga as
+instruções de DNS. Depois **atualize `NEXT_PUBLIC_SITE_URL` e as URLs do
+Supabase** para o domínio novo, e faça Redeploy — os links de indicação e de
+loja são montados a partir dessa variável.
+
+### Deploys automáticos
+
+A cada `git push` na branch padrão, a Vercel publica em produção. Outras
+branches geram *Preview Deployments* com URL própria.
+
+---
+
+# Depois de publicar
+
+## Renomear a marca e trocar os logos
+
+Em **`/admin/configuracoes`** → **Identidade da marca**. Dá para mudar:
+
+- **Nome da marca** — vem como `Shopurbanus MCI`
+- **Frase de apoio** — opcional, aparece abaixo do nome
+- **Logo principal** (horizontal) — cabeçalho da loja e telas de entrada
+- **Ícone quadrado** — app instalado no celular (PWA)
+
+O nome vale também para o título da aba do navegador e para o nome do app
+instalado, então renomear não exige mexer em código nem publicar de novo.
+
+Sem logo cadastrado, o app mostra a inicial do nome sobre o gradiente da
+paleta — nunca fica quebrado.
+
+### Como obter a URL de um logo
+
+1. No Supabase, vá em **Storage** → **New bucket**
+2. Nome `branding`, marque **Public bucket**
+3. Faça upload do arquivo
+4. Clique nele → **Copy URL**
+5. Cole no campo correspondente em `/admin/configuracoes`
+
+PNG com fundo transparente fica melhor. As imagens são exibidas com
+`object-contain`: o logo nunca é cortado nem esticado.
+
+## Cadastrar seus produtos
+
+Em `/admin/produtos`. O campo **pontos por unidade** é quanto a venda daquele
+produto injeta na rede quando você fecha o pedido.
+
+Os 5 produtos do seed são exemplos — desative ou apague e cadastre os seus.
+
+## Ajustar graduações e prêmios
+
+- Graduações: tabela `ranks` (`required_points`, `maintenance_points`)
+- Prêmios: `/admin/premios`
+- Meta mensal de ativação: `/admin/configuracoes`
+
+## Materiais de marketing
+
+O seed **não** cria materiais, para a galeria não ficar com imagens quebradas.
+Para adicionar: suba os arquivos no **Storage** do Supabase (bucket público
+`materials`), copie a URL pública e insira em `marketing_materials` com as
+dimensões reais do arquivo. Há um exemplo comentado no fim de `seed.sql`.
+
+## Fechamento mensal
+
+`fn_close_month` calcula ativação e graduação. **Precisa rodar uma vez por mês** —
+pelo botão em `/admin/usuarios` ou agendada (veja *Operação*, no fim).
+
+---
+
+# Solução de problemas
+
+| Sintoma | Causa provável | O que fazer |
+|---|---|---|
+| `'git' não é reconhecido` | Git não instalado | Instale e **abra um terminal novo** (o PATH só atualiza em janelas novas) |
+| `relation "public.users" does not exist` | SQL não aplicado | Refaça o Passo 4 na ordem |
+| Erro citando `NEXT_PUBLIC_SUPABASE_URL` | `.env.local` ausente ou incompleto | Passo 5. Reinicie o `npm run dev` depois de editar |
+| Loja vazia | Seed não rodou, ou produtos inativos | `select count(*) from public.products;` |
+| `/admin` dá 404 | Usuário não é admin | Rode o `update ... is_admin = true` do Passo 7 |
+| Funciona local, quebra na Vercel | Variáveis não estavam no build | Confira as três e faça **Redeploy** |
+| E-mail de confirmação leva a `localhost` | URLs do Auth não configuradas | Passo 4 da Vercel |
+| `npm ci` falha com `EUSAGE` | `package-lock.json` fora de sincronia | `rm -rf node_modules && npm install` |
+
+---
 
 ## Estrutura
 
@@ -40,7 +354,8 @@ supabase/
     ...300_rls.sql           policies, trigger de signup, grants
     ...400_admin_views.sql   views e RPCs do painel admin
     ...500_store.sql         loja: clientes, produtos, pedidos
-  seed.sql                   ranks, prêmios, materiais e produtos
+    ...600_branding.sql      nome e logos configuráveis
+  seed.sql                   ranks, prêmios e produtos de exemplo
 src/
   app/
     (app)/                   área do afiliado (layout com nav inferior)
@@ -177,7 +492,7 @@ Na loja:
 ### Verificação executada
 
 As migrações foram aplicadas em um Postgres 16 real (aplicação limpa e
-reexecução idempotente) e 44 asserções de comportamento passaram, sem falhas:
+reexecução idempotente) e 53 asserções de comportamento passaram, sem falhas:
 
 - rede: compressão dinâmica, pesos 1x/3x, bloqueio de ciclo
 - ciclo mensal: inatividade após 3 meses, grace period e rebaixamento

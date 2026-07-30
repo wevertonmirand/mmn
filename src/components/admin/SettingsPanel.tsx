@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Card, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { BrandPanel } from '@/components/admin/BrandPanel'
 import { updateSettingsAction } from '@/lib/actions/admin'
 import { cn } from '@/lib/utils'
 import type { Settings, ThemeName } from '@/lib/types'
@@ -29,6 +30,8 @@ export function SettingsPanel({ settings }: { settings: Settings }) {
 
   return (
     <div className="space-y-4">
+      <BrandPanel settings={settings} />
+
       <Card>
         <CardTitle>Master switch</CardTitle>
         <div className="mt-3 flex items-center justify-between gap-4">

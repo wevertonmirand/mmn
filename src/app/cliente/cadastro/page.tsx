@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { CustomerSignupForm } from '@/components/auth/CustomerSignupForm'
+import { BrandMark } from '@/components/ui/BrandMark'
+import { getBranding } from '@/lib/branding'
 
 export default async function CadastroClientePage({
   searchParams,
@@ -8,14 +10,14 @@ export default async function CadastroClientePage({
 }) {
   const { ref } = await searchParams
   const sponsor = ref?.toLowerCase().replace(/[^a-z0-9._-]/g, '') || null
+  const { brand_name, logo_url } = await getBranding()
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-4 py-10">
-      <div className="mb-8 text-center">
-        <div className="accent-gradient mx-auto mb-4 h-14 w-14 rounded-2xl" />
-        <h1 className="text-2xl font-bold text-gray-900">Criar conta de cliente</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Para acompanhar seus pedidos e receber o contato da equipe.
+      <div className="mb-8">
+        <BrandMark name={brand_name} logoUrl={logo_url} />
+        <p className="mt-2 text-center text-sm text-gray-500">
+          Crie sua conta para acompanhar seus pedidos e receber o contato da equipe.
         </p>
       </div>
 
