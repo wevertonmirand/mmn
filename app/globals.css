@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light; }
+body { @apply min-h-screen bg-slate-50 text-gray-900 antialiased; }
+button, a { @apply transition duration-200; }
+.gold-text { @apply bg-gradient-to-r from-yellow-500 to-amber-600 bg-clip-text text-transparent; }
+.gold-button { @apply bg-gradient-to-r from-yellow-500 to-amber-600 text-white shadow-gold hover:scale-105; }
