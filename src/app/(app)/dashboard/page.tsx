@@ -13,7 +13,7 @@ import type { DashboardPayload } from '@/lib/types'
 export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data, error } = await supabase.rpc('get_my_dashboard')
 
   if (error || !data) redirect('/login')

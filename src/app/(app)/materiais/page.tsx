@@ -5,7 +5,7 @@ import type { MarketingMaterial } from '@/lib/types'
 export const dynamic = 'force-dynamic'
 
 export default async function MateriaisPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data } = await supabase
     .from('marketing_materials')
     .select('*')

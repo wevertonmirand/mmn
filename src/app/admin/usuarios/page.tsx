@@ -8,7 +8,7 @@ import type { AtRiskUser } from '@/lib/types'
 export const dynamic = 'force-dynamic'
 
 export default async function UsuariosPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data } = await supabase.from('v_users_at_risk').select('*')
   const users = (data ?? []) as AtRiskUser[]
 

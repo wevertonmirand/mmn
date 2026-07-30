@@ -19,7 +19,7 @@ export async function placeOrderAction(
   notes: string,
   ref: string | null,
 ): Promise<PlaceOrderResult> {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { ok: false, error: 'Entre na sua conta para finalizar o pedido.' }
 
@@ -47,7 +47,7 @@ export async function placeOrderAction(
 }
 
 export async function upsertProductAction(formData: FormData): Promise<ActionResult> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const id = String(formData.get('id') ?? '')
   const name = String(formData.get('name') ?? '').trim()
@@ -102,7 +102,7 @@ export async function reviewOrderAction(
   action: OrderAction,
   notes?: string,
 ): Promise<ActionResult> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { error } = await supabase.rpc(RPC_BY_ACTION[action], {
     p_order_id: orderId,

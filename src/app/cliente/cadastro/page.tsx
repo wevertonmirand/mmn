@@ -1,12 +1,13 @@
 import Link from 'next/link'
 import { CustomerSignupForm } from '@/components/auth/CustomerSignupForm'
 
-export default function CadastroClientePage({
+export default async function CadastroClientePage({
   searchParams,
 }: {
-  searchParams: { ref?: string }
+  searchParams: Promise<{ ref?: string }>
 }) {
-  const sponsor = searchParams.ref?.toLowerCase().replace(/[^a-z0-9._-]/g, '') || null
+  const { ref } = await searchParams
+  const sponsor = ref?.toLowerCase().replace(/[^a-z0-9._-]/g, '') || null
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-4 py-10">

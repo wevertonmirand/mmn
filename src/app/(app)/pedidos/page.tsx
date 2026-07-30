@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
  * (orders_select_referrer) devolve apenas os pedidos indicados por ele.
  */
 export default async function PedidosIndicadosPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   const { data } = await supabase

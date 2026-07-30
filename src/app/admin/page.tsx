@@ -7,7 +7,7 @@ import type { AdminStats } from '@/lib/types'
 export const dynamic = 'force-dynamic'
 
 export default async function AdminHomePage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data } = await supabase.rpc('get_admin_stats')
   const stats = (data ?? {}) as Partial<AdminStats>
 

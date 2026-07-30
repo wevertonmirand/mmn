@@ -5,7 +5,7 @@ import type { Product } from '@/lib/types'
 export const dynamic = 'force-dynamic'
 
 export default async function ProdutosPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data } = await supabase
     .from('products')
     .select('*')

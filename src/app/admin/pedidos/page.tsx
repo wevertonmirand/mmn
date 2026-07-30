@@ -5,7 +5,7 @@ import type { AdminOrder } from '@/lib/types'
 export const dynamic = 'force-dynamic'
 
 export default async function PedidosPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data } = await supabase.from('v_admin_orders').select('*')
 
   return (

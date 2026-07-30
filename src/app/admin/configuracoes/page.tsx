@@ -5,7 +5,7 @@ import type { Settings } from '@/lib/types'
 export const dynamic = 'force-dynamic'
 
 export default async function ConfiguracoesPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data } = await supabase.from('settings').select('*').eq('id', true).single()
 
   return <SettingsPanel settings={data as Settings} />

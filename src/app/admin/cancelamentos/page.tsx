@@ -5,7 +5,7 @@ import type { PendingCancellation } from '@/lib/types'
 export const dynamic = 'force-dynamic'
 
 export default async function CancelamentosPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data } = await supabase.from('v_pending_cancellations').select('*')
 
   return (

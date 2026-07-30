@@ -10,7 +10,7 @@ export async function reviewCancellationAction(
   saleId: string,
   approve: boolean,
 ): Promise<ActionResult> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { error } = await supabase.rpc('review_sale_cancellation', {
     p_sale_id: saleId,
@@ -28,7 +28,7 @@ export async function reviewPrizeRequestAction(
   status: Extract<PrizeStatus, 'entregue' | 'recusado'>,
   notes?: string,
 ): Promise<ActionResult> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { error } = await supabase.rpc('review_prize_request', {
     p_request_id: requestId,
@@ -43,7 +43,7 @@ export async function reviewPrizeRequestAction(
 }
 
 export async function upsertPrizeAction(formData: FormData): Promise<ActionResult> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const id = String(formData.get('id') ?? '')
   const name = String(formData.get('name') ?? '').trim()
@@ -77,7 +77,7 @@ export async function upsertPrizeAction(formData: FormData): Promise<ActionResul
 export async function updateSettingsAction(
   patch: { gamification_enabled?: boolean; theme?: ThemeName; min_products_monthly?: number },
 ): Promise<ActionResult> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   if (
     patch.min_products_monthly !== undefined &&
@@ -94,7 +94,7 @@ export async function updateSettingsAction(
 }
 
 export async function closeMonthAction(period?: string): Promise<ActionResult> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { error } = await supabase.rpc('fn_close_month', { p_period: period ?? null })
   if (error) return { ok: false, error: error.message }
