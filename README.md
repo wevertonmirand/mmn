@@ -111,7 +111,8 @@ conteúdo de cada arquivo, **nesta ordem**:
 5. `supabase/migrations/20260730000500_store.sql`
 6. `supabase/migrations/20260730000600_branding.sql`
 7. `supabase/migrations/20260730000700_first_admin.sql`
-8. `supabase/seed.sql`
+8. `supabase/migrations/20260730000800_auto_sponsor.sql`
+9. `supabase/seed.sql`
 
 Pode rodar cada um separadamente ou tudo de uma vez. O SQL é **idempotente**:
 rodar de novo não duplica nada nem dá erro.
@@ -469,6 +470,28 @@ marcam `is_inactive = true`. Com 2 meses o afiliado aparece em
 `ranks.maintenance_points` define a meta mensal. O 1º mês abaixo dela apenas
 consome o **grace period**; o 2º mês consecutivo rebaixa um nível
 (`rank_order - 1`).
+
+### Cadastro sem link de indicação
+
+Não existe campo para digitar link: o patrocinador vem sempre do `?ref=` e é
+resolvido no banco, então ninguém escolhe onde entra na árvore.
+
+Quem chega sem link precisa marcar **"Ninguém me indicou"** — uma confirmação
+explícita, para que quem tem link não perca o patrocinador por descuido. O
+banco então direciona ao afiliado mais capacitado, por `fn_pick_best_sponsor`:
+
+1. ativo e com pontuação > 0 (ou admin, que numa operação nova é o único)
+2. menos indicados diretos — distribui o acompanhamento
+3. maior pontuação — entre os igualmente livres, quem produz mais
+4. mais antigo — desempate estável
+
+A ordem evita duas armadilhas. Pontuação em primeiro lugar criaria
+retroalimentação, já que cada indicação recebida rende pontos de recrutamento
+(3x) e manteria a mesma pessoa sempre no topo. Só "menos diretos" entregaria
+sempre ao recém-chegado com zero diretos, o menos capacitado de todos.
+
+Cliente da loja é exceção: sem link, o pedido fica como venda da casa.
+Atribuí-lo a um afiliado daria comissão de uma venda que ele não fez.
 
 ### Cancelamento de venda
 
