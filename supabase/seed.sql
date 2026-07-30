@@ -17,14 +17,14 @@ insert into public.prizes (name, description, required_points, sort_order) value
   ('Smartwatch',            'Relógio inteligente com monitor de atividades.',           3000, 3),
   ('Notebook',              'Notebook para escalar sua operação.',                     10000, 4),
   ('Viagem Internacional',  'Viagem com acompanhante para a convenção anual.',         30000, 5)
-on conflict do nothing;
+on conflict (name) do nothing;
 
 insert into public.marketing_materials (title, description, type, file_url, width, height, sort_order) values
   ('Banner Stories 1080x1920', 'Story vertical para Instagram e WhatsApp.', 'banner', '/materials/story-01.png', 1080, 1920, 1),
   ('Post Feed 1080x1080',      'Post quadrado para o feed.',                'banner', '/materials/feed-01.png',  1080, 1080, 2),
   ('Banner Horizontal 1200x628','Capa para Facebook e LinkedIn.',           'banner', '/materials/cover-01.png', 1200,  628, 3),
   ('Vídeo de Apresentação',    'Vídeo curto explicando a oportunidade.',    'video',  '/materials/pitch.mp4',    1080, 1920, 4)
-on conflict do nothing;
+on conflict (title) do nothing;
 
 -- Catálogo da loja. points_value é o que a venda injeta na rede
 -- quando o admin fecha o pedido.

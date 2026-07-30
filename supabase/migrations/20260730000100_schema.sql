@@ -158,7 +158,9 @@ create index if not exists monthly_activity_period_idx on public.monthly_activit
 -- -------------------------------------------------------------
 create table if not exists public.prizes (
   id              uuid primary key default gen_random_uuid(),
-  name            text not null,
+  -- único para o seed poder usar ON CONFLICT (name) e não duplicar,
+  -- e para o CRUD do admin não criar dois prêmios com o mesmo nome
+  name            text not null unique,
   description     text,
   required_points int  not null check (required_points > 0),
   image_url       text,
@@ -191,7 +193,7 @@ create index if not exists prize_requests_status_idx on public.prize_requests (s
 -- -------------------------------------------------------------
 create table if not exists public.marketing_materials (
   id          uuid primary key default gen_random_uuid(),
-  title       text not null,
+  title       text not null unique,
   description text,
   type        public.material_type not null default 'banner',
   file_url    text not null,
@@ -230,3 +232,17 @@ drop trigger if exists settings_touch_updated_at on public.settings;
 create trigger settings_touch_updated_at
   before update on public.settings
   for each row execute function public.fn_touch_updated_at();
+
+-- -------------------------------------------------------------
+-- Bancos criados antes destas constraints não as ganham pelo
+-- `create table if not exists` acima, então aplicamos à parte.
+-- Sem elas o ON CONFLICT do seed não tem alvo e duplica as linhas.
+-- -------------------------------------------------------------
+do $$ begin
+  alter table public.prizes add constraint prizes_name_key unique (name);
+exception when duplicate_table or duplicate_object then null; end $$;
+
+do $$ begin
+  alter table public.marketing_materials
+    add constraint marketing_materials_title_key unique (title);
+exception when duplicate_table or duplicate_object then null; end $$;
