@@ -149,7 +149,9 @@ a ordem do Passo 4.
 
 No painel do Supabase, vá em **Settings** → **API** e copie:
 
-- **Project URL** — algo como `https://abcdefgh.supabase.co`
+- **Project URL** — algo como `https://abcdefgh.supabase.co`, **sem caminho no
+  final**. Se copiar a URL da API REST (`.../rest/v1`), login e cadastro
+  respondem 404
 - **Publishable key** — começa com `sb_publishable_...`
 
 Crie o arquivo `.env.local` na raiz do projeto:
@@ -389,6 +391,7 @@ pelo botão em `/admin/usuarios` ou agendada (veja *Operação*, no fim).
 | `Link de indicação inválido` no cadastro | O `?ref=` do link aponta para um usuário que não existe | Cadastre-se sem o `?ref=`, ou confirme o link com quem indicou |
 | Cadastro some sem erro e volta ao login | Confirmação de e-mail ativa no Supabase | **Authentication** → **Providers** → **Email**: desligue *Confirm email*, ou confirme pelo e-mail recebido |
 | Funciona local, quebra na Vercel | Variáveis não estavam no build | Confira as três e faça **Redeploy** |
+| `404` em `/rest/v1/auth/v1/signup` no console | `NEXT_PUBLIC_SUPABASE_URL` com `/rest/v1` no final | Deixe só `https://seu-projeto.supabase.co` e reinicie o `npm run dev` |
 | E-mail de confirmação leva a `localhost` | URLs do Auth não configuradas | Passo 4 da Vercel |
 | `npm ci` falha com `EUSAGE` | `package-lock.json` fora de sincronia | `rm -rf node_modules && npm install` |
 
