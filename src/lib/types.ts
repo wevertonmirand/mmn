@@ -362,6 +362,8 @@ export type Database = {
       create_crm_sale: { Args: { p_customer_id:string|null; p_items:{product_id:string;quantity:number;unit_price_cents:number}[];p_idempotency_key:string }; Returns:string }
       cancel_crm_sale: { Args:{p_sale_id:string};Returns:undefined }
       remove_affiliate: { Args:{p_user_id:string;p_reason:string};Returns:undefined }
+      is_username_available: { Args: { p_username: string }; Returns: boolean }
+      change_my_username: { Args: { p_username: string }; Returns: string }
     }
     Enums: {
       sale_status: SaleStatus

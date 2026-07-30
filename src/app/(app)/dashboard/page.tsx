@@ -6,6 +6,7 @@ import { GamificationCard } from '@/components/dashboard/GamificationCard'
 import { ActivationAlert } from '@/components/dashboard/ActivationAlert'
 import { QuickActions } from '@/components/dashboard/QuickActions'
 import { StoreLinkCard } from '@/components/dashboard/StoreLinkCard'
+import { ReferralUsernameForm } from '@/components/dashboard/ReferralUsernameForm'
 import { Card } from '@/components/ui/Card'
 import { formatPoints } from '@/lib/utils'
 import type { DashboardPayload } from '@/lib/types'
@@ -72,6 +73,8 @@ export default async function DashboardPage() {
       <QuickActions username={payload.user.username} />
 
       <StoreLinkCard username={payload.user.username} />
+
+      <ReferralUsernameForm currentUsername={payload.user.username} />
     </div>
   )
 }
