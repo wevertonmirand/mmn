@@ -112,7 +112,8 @@ conteúdo de cada arquivo, **nesta ordem**:
 6. `supabase/migrations/20260730000600_branding.sql`
 7. `supabase/migrations/20260730000700_first_admin.sql`
 8. `supabase/migrations/20260730000800_auto_sponsor.sql`
-9. `supabase/seed.sql`
+9. `supabase/migrations/20260730000900_auto_username.sql`
+10. `supabase/seed.sql`
 
 Pode rodar cada um separadamente ou tudo de uma vez. O SQL é **idempotente**:
 rodar de novo não duplica nada nem dá erro.
@@ -148,7 +149,9 @@ a ordem do Passo 4.
 
 No painel do Supabase, vá em **Settings** → **API** e copie:
 
-- **Project URL** — algo como `https://abcdefgh.supabase.co`
+- **Project URL** — algo como `https://abcdefgh.supabase.co`, **sem caminho no
+  final**. Se copiar a URL da API REST (`.../rest/v1`), login e cadastro
+  respondem 404
 - **Publishable key** — começa com `sb_publishable_...`
 
 Crie o arquivo `.env.local` na raiz do projeto:
@@ -388,6 +391,7 @@ pelo botão em `/admin/usuarios` ou agendada (veja *Operação*, no fim).
 | `Link de indicação inválido` no cadastro | O `?ref=` do link aponta para um usuário que não existe | Cadastre-se sem o `?ref=`, ou confirme o link com quem indicou |
 | Cadastro some sem erro e volta ao login | Confirmação de e-mail ativa no Supabase | **Authentication** → **Providers** → **Email**: desligue *Confirm email*, ou confirme pelo e-mail recebido |
 | Funciona local, quebra na Vercel | Variáveis não estavam no build | Confira as três e faça **Redeploy** |
+| `404` em `/rest/v1/auth/v1/signup` no console | `NEXT_PUBLIC_SUPABASE_URL` com `/rest/v1` no final | Deixe só `https://seu-projeto.supabase.co` e reinicie o `npm run dev` |
 | E-mail de confirmação leva a `localhost` | URLs do Auth não configuradas | Passo 4 da Vercel |
 | `npm ci` falha com `EUSAGE` | `package-lock.json` fora de sincronia | `rm -rf node_modules && npm install` |
 
@@ -470,6 +474,27 @@ marcam `is_inactive = true`. Com 2 meses o afiliado aparece em
 `ranks.maintenance_points` define a meta mensal. O 1º mês abaixo dela apenas
 consome o **grace period**; o 2º mês consecutivo rebaixa um nível
 (`rank_order - 1`).
+
+### Código do afiliado
+
+O cadastro pede apenas **nome, e-mail e senha**. O código do afiliado
+(`username`) é gerado no banco a partir do primeiro nome, por
+`fn_generate_username`:
+
+| Nome informado | Código |
+|---|---|
+| Weverton Miranda | `weverton` |
+| José da Silva | `jose` |
+| Ângela Cruz | `angela` |
+| Weverton Souza (já existe `weverton`) | `weverton3094` |
+| Zé | `ze9135` |
+
+Acentos são removidos, maiúsculas normalizadas e o sufixo numérico só entra
+quando o nome puro já está em uso. É identificação visual e endereço de link
+(`/loja/weverton`) — quem manda na rede é o `id`.
+
+Pedir esse campo no cadastro era uma armadilha: a constraint aceita só
+minúsculas sem acento, então digitar o próprio nome era recusado de imediato.
 
 ### Cadastro sem link de indicação
 

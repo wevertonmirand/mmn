@@ -16,13 +16,38 @@ const URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
+/**
+ * O supabase-js monta os caminhos (`/auth/v1/...`, `/rest/v1/...`) em cima
+ * desta URL, então ela precisa ser só a origem. Colar a URL da API REST
+ * (`https://projeto.supabase.co/rest/v1`) gera `/rest/v1/auth/v1/signup` e
+ * todo login e cadastro devolve 404 — por isso normalizamos aqui em vez de
+ * confiar no que veio no .env.
+ */
 export function supabaseUrl() {
   if (!URL) {
     throw new Error(
       'NEXT_PUBLIC_SUPABASE_URL não definida. Copie .env.example para .env.local e preencha com os dados do seu projeto (Supabase > Settings > API).',
     )
   }
-  return URL
+
+  const raw = URL.trim()
+
+  let parsed: globalThis.URL
+  try {
+    parsed = new globalThis.URL(raw)
+  } catch {
+    throw new Error(
+      `NEXT_PUBLIC_SUPABASE_URL inválida: "${raw}". Use a Project URL completa, como https://seu-projeto.supabase.co`,
+    )
+  }
+
+  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+    throw new Error(
+      `NEXT_PUBLIC_SUPABASE_URL inválida: "${raw}". Deve começar com https://`,
+    )
+  }
+
+  return parsed.origin
 }
 
 export function supabaseKey() {
