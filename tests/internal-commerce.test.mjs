@@ -10,3 +10,4 @@ test('RLS isola dados e funções administrativas validam admin',()=>{has('user_
 test('RLS de comissões usa beneficiary_id, pois a tabela não possui user_id',()=>{const policies=sql.split('alter table inventory enable row level security')[1];assert.match(policies,/commission_ledger[\s\S]*beneficiary_id\s*=\s*auth\.uid\(\)/i);assert.doesNotMatch(policies,/commission_ledger[^;]*user_id\s*=\s*auth\.uid\(\)/i)})
 test('remoção reassocia filhos, audita e protege último admin',()=>{has('update users set sponsor_id=old where sponsor_id=p_user_id');has('network_removal_audit');has('último administrador')})
 test('percentuais têm validação de soma',()=>{has('soma das comissões não pode ultrapassar 100')})
+test('migration solicita recarga do schema cache do PostgREST',()=>{has("notify pgrst, 'reload schema'")})

@@ -115,7 +115,8 @@ conteúdo de cada arquivo, **nesta ordem**:
 9. `supabase/migrations/20260730000900_auto_username.sql`
 10. `supabase/migrations/20260730001000_internal_commerce.sql`
 11. `supabase/migrations/20260730001100_affiliate_username.sql`
-12. `supabase/seed.sql`
+12. `supabase/migrations/20260730001200_refresh_commerce_schema.sql`
+13. `supabase/seed.sql`
 
 Pode rodar cada um separadamente ou tudo de uma vez. O SQL é **idempotente**:
 rodar de novo não duplica nada nem dá erro.
@@ -268,6 +269,13 @@ usam `create_crm_sale` e nunca geram pontos ou comissão.
 No dashboard, o afiliado pode personalizar o nome usado em `/cadastro?ref=nome` e `/loja/nome`.
 A disponibilidade é verificada antes do envio e confirmada atomicamente pela RPC
 `change_my_username`, de modo que dois usuários nunca consigam reservar o mesmo nome.
+
+### Erro de schema cache nas comissões
+
+Se a API responder `Could not find the 'commission_level_1' column ... in the schema cache`,
+a migration `010` não terminou ou o PostgREST ainda está usando o schema anterior. Reaplique a
+`010` completa e execute a `012`. Ambas notificam o PostgREST para recarregar o cache; não é
+necessário apagar dados nem executar `db reset`.
 
 ---
 

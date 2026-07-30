@@ -65,3 +65,5 @@ revoke all on function public.is_username_available(text) from public;
 revoke all on function public.change_my_username(text) from public;
 grant execute on function public.is_username_available(text) to authenticated;
 grant execute on function public.change_my_username(text) to authenticated;
+
+notify pgrst, 'reload schema';

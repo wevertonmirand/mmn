@@ -27,7 +27,16 @@ export async function saveCommissionsAction(formData: FormData): Promise<ActionR
   if (values.some((v) => !Number.isFinite(v) || v < 0) || values.reduce((a, b) => a + b, 0) > 100) return { ok: false, error: 'Percentuais inválidos: use valores positivos cuja soma seja até 100%.' }
   const patch = { commission_level_1: values[0], commission_level_2: values[1], commission_level_3: values[2], commission_level_4: values[3], commission_level_5: values[4] }
   const supabase = await createClient(); const { error } = await supabase.from('settings').update(patch).eq('id', true)
-  if (error) return { ok: false, error: error.message }; revalidatePath('/admin/comissoes'); return { ok: true }
+  if (error) {
+    if (error.message.includes("commission_level_1") && error.message.includes('schema cache')) {
+      return {
+        ok: false,
+        error: 'O banco ainda não publicou as colunas de comissão. Aplique as migrations 010 e 012 no Supabase e tente novamente.',
+      }
+    }
+    return { ok: false, error: error.message }
+  }
+  revalidatePath('/admin/comissoes'); return { ok: true }
 }
 
 export async function removeAffiliateAction(formData: FormData): Promise<ActionResult> {

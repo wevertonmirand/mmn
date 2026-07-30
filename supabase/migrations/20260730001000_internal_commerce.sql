@@ -218,3 +218,7 @@ create policy product_images_admin_update on storage.objects
   using (bucket_id = 'product-images' and public.is_admin())
   with check (bucket_id = 'product-images' and public.is_admin());
 grant execute on function place_internal_order(jsonb),create_crm_sale(uuid,jsonb,text),cancel_crm_sale(uuid),remove_affiliate(uuid,text) to authenticated;
+
+-- O SQL Editor pode concluir o DDL antes de o PostgREST atualizar seu cache.
+-- A notificação torna as novas colunas/RPCs disponíveis imediatamente na API.
+notify pgrst, 'reload schema';
