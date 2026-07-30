@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardTitle } from '@/components/ui/Card'
-import { formatPoints } from '@/lib/utils'
+import { formatBRL, formatPoints } from '@/lib/utils'
 import type { AdminStats } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -12,6 +12,10 @@ export default async function AdminHomePage() {
   const stats = (data ?? {}) as Partial<AdminStats>
 
   const tiles = [
+    { label: 'Pedidos novos', value: stats.new_orders ?? 0, href: '/admin/pedidos' },
+    { label: 'Pedidos em aberto', value: stats.open_orders ?? 0, href: '/admin/pedidos' },
+    { label: 'Faturado no mês', value: formatBRL(stats.orders_revenue_month ?? 0) },
+    { label: 'Produtos ativos', value: stats.active_products ?? 0, href: '/admin/produtos' },
     { label: 'Afiliados ativos', value: stats.active_users ?? 0 },
     { label: 'Inativos', value: stats.inactive_users ?? 0 },
     { label: 'Em risco (2 meses)', value: stats.at_risk_users ?? 0, href: '/admin/usuarios' },
@@ -19,7 +23,7 @@ export default async function AdminHomePage() {
     { label: 'Prêmios a entregar', value: stats.pending_prizes ?? 0, href: '/admin/premios' },
     { label: 'Produtos vendidos no mês', value: stats.sales_this_month ?? 0 },
     { label: 'Pontos gerados no mês', value: formatPoints(stats.points_this_month ?? 0) },
-    { label: 'Total de afiliados', value: stats.total_users ?? 0 },
+    { label: 'Clientes cadastrados', value: stats.total_customers ?? 0 },
   ]
 
   return (

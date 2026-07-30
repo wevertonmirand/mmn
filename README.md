@@ -39,19 +39,23 @@ supabase/
     ...200_functions.sql     rede, pontuação, fechamento mensal
     ...300_rls.sql           policies, trigger de signup, grants
     ...400_admin_views.sql   views e RPCs do painel admin
-  seed.sql                   ranks, prêmios e materiais de exemplo
+    ...500_store.sql         loja: clientes, produtos, pedidos
+  seed.sql                   ranks, prêmios, materiais e produtos
 src/
   app/
     (app)/                   área do afiliado (layout com nav inferior)
-      dashboard/ vendas/ rede/ materiais/
+      dashboard/ vendas/ pedidos/ rede/ materiais/
     admin/                   área do Super Admin
-      cancelamentos/ usuarios/ premios/ configuracoes/
+      pedidos/ produtos/ cancelamentos/ usuarios/ premios/ configuracoes/
+    loja/                    vitrine pública, /loja e /loja/[ref]
+    cliente/                 cadastro e pedidos do cliente final
     login/ cadastro/
+    page.tsx                 roteia por papel: admin, afiliado ou cliente
   components/
-    ui/ dashboard/ vendas/ rede/ materiais/ admin/ auth/
+    ui/ dashboard/ vendas/ rede/ materiais/ loja/ admin/ auth/
   lib/
     supabase/                clients browser/server/middleware
-    actions/                 server actions (sales, prizes, admin)
+    actions/                 server actions (sales, prizes, admin, store)
     types.ts utils.ts
 ```
 
@@ -110,6 +114,39 @@ O afiliado **nunca** deleta: `request_sale_cancellation` muda o status para
 `review_sale_cancellation(id, true)`, que espelha os lançamentos originais em
 negativo por toda a linha que recebeu crédito. Recusar devolve a venda a `ativa`.
 
+## Loja integrada
+
+Não há pagamento online: a loja captura o pedido e o admin fecha a venda no
+contato.
+
+**Fluxo.** O admin cadastra produtos em `/admin/produtos` (preço em centavos e
+`points_value`, quanto a venda injeta na rede). O afiliado compartilha
+`/loja/<username>`. O cliente cria conta, monta o carrinho e envia o pedido —
+que cai em `/admin/pedidos` com status `novo`. O admin liga ou chama no
+WhatsApp (botões prontos na fila), marca `em_contato` e depois **Fechar venda**.
+
+**Fechar venda distribui os pontos.** `close_order` cria uma linha em `sales`
+**por item** do pedido, e cada insert dispara o motor de pontos existente
+(peso 1x + compressão dinâmica até o 5º nível). Uma linha por item, e não uma
+por pedido, porque a ativação mensal conta unidades de produto e os pontos
+variam por produto — um único registro agregado quebraria uma das duas contas.
+
+**Cancelar estorna.** Cancelar um pedido já fechado reverte os lançamentos de
+todas as vendas geradas e marca as vendas como canceladas. `fn_reverse_sale_points`
+é compartilhada com o cancelamento de venda do CRM.
+
+**Clientes ficam em `customers`, não em `users`.** `users` é a árvore de
+afiliados e carrega triggers de recrutamento (3x), ciclo mensal e graduação. Um
+cliente ali geraria pontos de recrutamento a cada cadastro e entraria no
+fechamento mensal. O trigger de signup decide a tabela pelo `role` no metadata.
+
+**Preço e pontos nunca vêm do cliente.** `place_order` recebe apenas
+`product_id` e quantidade; totais são calculados a partir do catálogo ativo no
+servidor. Produto inativo, carrinho vazio e pedido sem telefone são recusados.
+
+Pedido sem afiliado vinculado (acesso direto a `/loja`) é venda da casa: fecha
+normalmente, sem distribuir pontos. A fila do admin avisa isso antes.
+
 ## Segurança
 
 RLS ativo em todas as tabelas. O afiliado enxerga **a si mesmo, sua downline
@@ -128,13 +165,29 @@ Pontos de atenção implementados:
 - `request_prize` valida a pontuação no servidor.
 - `/admin` responde 404 para não-admin (não revela a existência da área).
 
+Na loja:
+
+- O cliente vê apenas os próprios pedidos; o afiliado vê apenas os pedidos que
+  indicou. A upline **não** vê os dados de contato dos clientes do downline, e
+  nenhum afiliado enxerga a tabela `customers` — é PII de terceiro.
+- `customers.referred_by` é imutável para o cliente: sem essa trava ele poderia
+  se reapontar para outro afiliado e desviar os pontos do pedido.
+- Totais do pedido não são graváveis pelo cliente; só as RPCs escrevem.
+
 ### Verificação executada
 
-As migrações foram aplicadas em um Postgres 16 real e a lógica validada:
-compressão dinâmica, pesos 1x/3x, cancelamento em duas etapas com estorno
-recursivo, inatividade após 3 meses, grace period e rebaixamento, bloqueio de
-ciclo, invisibilidade de crossline (tabelas e RPCs), tentativa de escalar para
-admin, fraude de pontos, venda em nome de terceiro e acesso a RPCs de admin.
+As migrações foram aplicadas em um Postgres 16 real (aplicação limpa e
+reexecução idempotente) e 44 asserções de comportamento passaram, sem falhas:
+
+- rede: compressão dinâmica, pesos 1x/3x, bloqueio de ciclo
+- ciclo mensal: inatividade após 3 meses, grace period e rebaixamento
+- cancelamento em duas etapas com estorno recursivo, sem estorno duplicado
+- loja: totais calculados no servidor, produto inativo e carrinho vazio
+  recusados, pontos só no fechamento, fechamento duplicado bloqueado,
+  cancelamento de pedido fechado estornando a rede
+- segurança: crossline invisível (tabelas e RPCs), isolamento entre clientes,
+  upline sem acesso a PII, tentativa de escalar para admin, fraude de pontos,
+  roubo de atribuição, venda em nome de terceiro e acesso a RPCs de admin
 
 ## Materiais de marketing
 

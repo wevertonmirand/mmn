@@ -8,16 +8,24 @@ create extension if not exists "pgcrypto";
 -- -------------------------------------------------------------
 -- Enums
 -- -------------------------------------------------------------
-create type public.points_origin as enum ('sale', 'recruitment', 'adjustment');
-create type public.sale_status   as enum ('ativa', 'pendente_cancelamento', 'cancelada');
-create type public.prize_status  as enum ('solicitado', 'entregue', 'recusado');
-create type public.material_type as enum ('banner', 'video', 'documento');
+do $$ begin
+  create type public.points_origin as enum ('sale', 'recruitment', 'adjustment');
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create type public.sale_status as enum ('ativa', 'pendente_cancelamento', 'cancelada');
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create type public.prize_status as enum ('solicitado', 'entregue', 'recusado');
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create type public.material_type as enum ('banner', 'video', 'documento');
+exception when duplicate_object then null; end $$;
 
 -- -------------------------------------------------------------
 -- Ranks (graduações)
 -- rank_order define a escada: rebaixamento vai para rank_order - 1
 -- -------------------------------------------------------------
-create table public.ranks (
+create table if not exists public.ranks (
   id                 uuid primary key default gen_random_uuid(),
   name               text not null unique,
   rank_order         int  not null unique check (rank_order >= 0),
@@ -31,7 +39,7 @@ create table public.ranks (
 -- Usuários / afiliados
 -- sponsor_id monta a rede unilevel (lateralidade infinita)
 -- -------------------------------------------------------------
-create table public.users (
+create table if not exists public.users (
   id                      uuid primary key references auth.users (id) on delete cascade,
   sponsor_id              uuid references public.users (id) on delete set null,
   username                text not null unique
@@ -52,14 +60,14 @@ create table public.users (
   constraint users_no_self_sponsor check (sponsor_id is null or sponsor_id <> id)
 );
 
-create index users_sponsor_id_idx  on public.users (sponsor_id);
-create index users_username_idx    on public.users (lower(username));
-create index users_is_inactive_idx on public.users (is_inactive) where is_inactive;
+create index if not exists users_sponsor_id_idx  on public.users (sponsor_id);
+create index if not exists users_username_idx    on public.users (lower(username));
+create index if not exists users_is_inactive_idx on public.users (is_inactive) where is_inactive;
 
 -- -------------------------------------------------------------
 -- Configuração global (linha única, id = true)
 -- -------------------------------------------------------------
-create table public.settings (
+create table if not exists public.settings (
   id                     boolean primary key default true check (id),
   min_products_monthly   int  not null default 2 check (min_products_monthly >= 0),
   max_network_levels     int  not null default 5 check (max_network_levels between 1 and 20),
@@ -70,13 +78,13 @@ create table public.settings (
   updated_at             timestamptz not null default now()
 );
 
-insert into public.settings (id) values (true);
+insert into public.settings (id) values (true) on conflict (id) do nothing;
 
 -- -------------------------------------------------------------
 -- Vendas (CRM manual do afiliado)
 -- Cancelamento é sempre em duas etapas: pedido -> aprovação do admin
 -- -------------------------------------------------------------
-create table public.sales (
+create table if not exists public.sales (
   id                  uuid primary key default gen_random_uuid(),
   user_id             uuid not null references public.users (id) on delete cascade,
   product_name        text not null check (length(btrim(product_name)) > 0),
@@ -93,14 +101,14 @@ create table public.sales (
   created_at          timestamptz not null default now()
 );
 
-create index sales_user_id_idx on public.sales (user_id, sold_at desc);
-create index sales_status_idx  on public.sales (status) where status = 'pendente_cancelamento';
+create index if not exists sales_user_id_idx on public.sales (user_id, sold_at desc);
+create index if not exists sales_status_idx  on public.sales (status) where status = 'pendente_cancelamento';
 
 -- -------------------------------------------------------------
 -- Motor de pontuação (ledger imutável — estornos entram como linha negativa)
 -- level = 0 é o próprio gerador do evento; 1..5 é a upline comprimida
 -- -------------------------------------------------------------
-create table public.points_ledger (
+create table if not exists public.points_ledger (
   id             uuid primary key default gen_random_uuid(),
   user_id        uuid not null references public.users (id) on delete cascade, -- quem recebe
   source_user_id uuid not null references public.users (id) on delete cascade, -- quem gerou
@@ -116,18 +124,18 @@ create table public.points_ledger (
   created_at     timestamptz not null default now()
 );
 
-create index points_ledger_user_idx   on public.points_ledger (user_id, created_at desc);
-create index points_ledger_sale_idx   on public.points_ledger (sale_id);
-create index points_ledger_source_idx on public.points_ledger (source_user_id);
+create index if not exists points_ledger_user_idx   on public.points_ledger (user_id, created_at desc);
+create index if not exists points_ledger_sale_idx   on public.points_ledger (sale_id);
+create index if not exists points_ledger_source_idx on public.points_ledger (source_user_id);
 -- garante um único estorno por lançamento
-create unique index points_ledger_reverses_uniq
+create unique index if not exists points_ledger_reverses_uniq
   on public.points_ledger (reverses_id) where reverses_id is not null;
 
 -- -------------------------------------------------------------
 -- Fechamento mensal (ativação + manutenção de graduação)
 -- period = primeiro dia do mês de referência
 -- -------------------------------------------------------------
-create table public.monthly_activity (
+create table if not exists public.monthly_activity (
   id              uuid primary key default gen_random_uuid(),
   user_id         uuid not null references public.users (id) on delete cascade,
   period          date not null,
@@ -143,12 +151,12 @@ create table public.monthly_activity (
   constraint monthly_activity_uniq unique (user_id, period)
 );
 
-create index monthly_activity_period_idx on public.monthly_activity (period desc);
+create index if not exists monthly_activity_period_idx on public.monthly_activity (period desc);
 
 -- -------------------------------------------------------------
 -- Prêmios e solicitações
 -- -------------------------------------------------------------
-create table public.prizes (
+create table if not exists public.prizes (
   id              uuid primary key default gen_random_uuid(),
   name            text not null,
   description     text,
@@ -160,7 +168,7 @@ create table public.prizes (
   updated_at      timestamptz not null default now()
 );
 
-create table public.prize_requests (
+create table if not exists public.prize_requests (
   id             uuid primary key default gen_random_uuid(),
   user_id        uuid not null references public.users (id) on delete cascade,
   prize_id       uuid not null references public.prizes (id) on delete restrict,
@@ -174,14 +182,14 @@ create table public.prize_requests (
   constraint prize_requests_uniq unique (user_id, prize_id)
 );
 
-create index prize_requests_status_idx on public.prize_requests (status, requested_at desc);
+create index if not exists prize_requests_status_idx on public.prize_requests (status, requested_at desc);
 
 -- -------------------------------------------------------------
 -- Materiais de marketing
 -- width/height são guardados para o front reservar o aspect-ratio
 -- original sem precisar de crop
 -- -------------------------------------------------------------
-create table public.marketing_materials (
+create table if not exists public.marketing_materials (
   id          uuid primary key default gen_random_uuid(),
   title       text not null,
   description text,

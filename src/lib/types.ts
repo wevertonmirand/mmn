@@ -125,6 +125,11 @@ export type AdminStats = {
   pending_prizes: number
   sales_this_month: number
   points_this_month: number
+  open_orders: number
+  new_orders: number
+  orders_revenue_month: number
+  active_products: number
+  total_customers: number
 }
 
 export type PendingCancellation = {
@@ -177,6 +182,81 @@ export type PrizeRequestRow = {
   lifetime_points: number
 }
 
+export type OrderStatus = 'novo' | 'em_contato' | 'fechado' | 'cancelado'
+
+export type Product = {
+  id: string
+  name: string
+  description: string | null
+  sku: string | null
+  price_cents: number
+  points_value: number
+  image_url: string | null
+  is_active: boolean
+  sort_order: number
+}
+
+export type Customer = {
+  id: string
+  full_name: string
+  email: string | null
+  phone: string | null
+  address: string | null
+  referred_by: string | null
+}
+
+export type OrderItem = {
+  product_name: string
+  quantity: number
+  unit_price_cents: number
+  unit_points: number
+}
+
+export type Order = {
+  id: string
+  order_number: number
+  customer_id: string
+  contact_name: string
+  contact_phone: string
+  contact_email: string | null
+  address: string | null
+  customer_notes: string | null
+  referred_by: string | null
+  status: OrderStatus
+  total_cents: number
+  total_points: number
+  admin_notes: string | null
+  contacted_at: string | null
+  closed_at: string | null
+  cancelled_at: string | null
+  created_at: string
+}
+
+export type AdminOrder = Order & {
+  referred_by_username: string | null
+  referred_by_name: string | null
+  item_count: number
+  items: OrderItem[]
+}
+
+/** Item do carrinho no cliente. Preço aqui é só para exibir — o
+ *  servidor recalcula tudo a partir do catálogo em place_order. */
+export type CartLine = {
+  product_id: string
+  name: string
+  price_cents: number
+  points_value: number
+  quantity: number
+}
+
+export type PlacedOrder = {
+  order_id: string
+  order_number: number
+  items: number
+  total_cents: number
+  total_points: number
+}
+
 type Table<Row> = { Row: Row; Insert: Partial<Row>; Update: Partial<Row>; Relationships: [] }
 type View<Row> = { Row: Row; Relationships: [] }
 
@@ -201,11 +281,16 @@ export type Database = {
         delivered_at: string | null
       }>
       marketing_materials: Table<MarketingMaterial>
+      products: Table<Product>
+      customers: Table<Customer>
+      orders: Table<Order>
+      order_items: Table<OrderItem & { id: string; order_id: string; product_id: string | null }>
     }
     Views: {
       v_users_at_risk: View<AtRiskUser>
       v_pending_cancellations: View<PendingCancellation>
       v_prize_requests: View<PrizeRequestRow>
+      v_admin_orders: View<AdminOrder>
     }
     Functions: {
       get_my_dashboard: { Args: Record<string, never>; Returns: DashboardPayload }
@@ -229,12 +314,26 @@ export type Database = {
         Returns: unknown
       }
       fn_close_month: { Args: { p_period?: string | null }; Returns: unknown }
+      place_order: {
+        Args: {
+          p_items: { product_id: string; quantity: number }[]
+          p_phone: string
+          p_address?: string | null
+          p_notes?: string | null
+          p_ref?: string | null
+        }
+        Returns: PlacedOrder
+      }
+      mark_order_contacted: { Args: { p_order_id: string; p_notes?: string | null }; Returns: Order }
+      close_order: { Args: { p_order_id: string; p_notes?: string | null }; Returns: unknown }
+      cancel_order: { Args: { p_order_id: string; p_notes?: string | null }; Returns: unknown }
     }
     Enums: {
       sale_status: SaleStatus
       prize_status: PrizeStatus
       points_origin: PointsOrigin
       material_type: MaterialType
+      order_status: OrderStatus
     }
     CompositeTypes: Record<string, never>
   }

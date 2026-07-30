@@ -5,6 +5,7 @@ import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
 import { GamificationCard } from '@/components/dashboard/GamificationCard'
 import { ActivationAlert } from '@/components/dashboard/ActivationAlert'
 import { QuickActions } from '@/components/dashboard/QuickActions'
+import { StoreLinkCard } from '@/components/dashboard/StoreLinkCard'
 import { Card } from '@/components/ui/Card'
 import { formatPoints } from '@/lib/utils'
 import type { DashboardPayload } from '@/lib/types'
@@ -69,6 +70,8 @@ export default async function DashboardPage() {
       </div>
 
       <QuickActions username={payload.user.username} />
+
+      <StoreLinkCard username={payload.user.username} />
     </div>
   )
 }
