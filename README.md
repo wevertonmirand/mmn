@@ -218,6 +218,16 @@ select public.set_admin('outro_usuario');          -- promove
 select public.set_admin('outro_usuario', false);   -- remove
 ```
 
+### Criar um admin de teste pelo SQL Editor
+
+Para testar rápido, sem passar pelo cadastro: rode
+[`docs/criar-admin-teste.sql`](docs/criar-admin-teste.sql) no SQL Editor. Ele
+cria `admin@admin.com` com senha `admin`, já confirmado e como administrador.
+Rodar de novo apenas redefine a senha.
+
+**O login é por e-mail**, não por nome de usuário — entre com
+`admin@admin.com`. Troque a senha antes de divulgar o site.
+
 ### Se precisar criar o admin manualmente
 
 Caso o cadastro pelo site falhe por algum motivo:
