@@ -38,6 +38,20 @@ export type Settings = {
   recruitment_multiplier: number
   gamification_enabled: boolean
   theme: ThemeName
+  brand_name: string
+  brand_tagline: string | null
+  logo_url: string | null
+  logo_icon_url: string | null
+}
+
+/** Recorte de `settings` legível sem sessão (a vitrine é pública). */
+export type PublicBranding = {
+  brand_name: string
+  brand_tagline: string | null
+  logo_url: string | null
+  logo_icon_url: string | null
+  theme: ThemeName
+  gamification_enabled: boolean
 }
 
 export type Sale = {
@@ -290,6 +304,7 @@ export type Database = {
       v_users_at_risk: View<AtRiskUser>
       v_pending_cancellations: View<PendingCancellation>
       v_prize_requests: View<PrizeRequestRow>
+      v_public_branding: View<PublicBranding>
       v_admin_orders: View<AdminOrder>
     }
     Functions: {

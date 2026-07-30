@@ -1,11 +1,15 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { StoreClient } from '@/components/loja/StoreClient'
+import { BrandMark } from '@/components/ui/BrandMark'
+import { getBranding } from '@/lib/branding'
 import type { Customer, Product } from '@/lib/types'
 
 /** Vitrine compartilhada por /loja e /loja/[ref]. */
 export async function StorePage({ sponsorUsername }: { sponsorUsername: string | null }) {
   const supabase = await createClient()
+
+  const branding = await getBranding()
 
   const [{ data: products }, { data: { user } }] = await Promise.all([
     supabase
@@ -30,18 +34,18 @@ export async function StorePage({ sponsorUsername }: { sponsorUsername: string |
 
   return (
     <main className="mx-auto w-full max-w-md px-4 pb-28 pt-6">
-      <header className="mb-5 flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Loja</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Monte seu pedido e nossa equipe entra em contato para fechar.
-          </p>
+      <header className="mb-5">
+        <div className="flex items-center justify-between gap-3">
+          <BrandMark name={branding.brand_name} logoUrl={branding.logo_url} layout="inline" />
+          {customer && (
+            <Link href="/cliente/pedidos" className="shrink-0 text-sm font-semibold accent-text">
+              Meus pedidos
+            </Link>
+          )}
         </div>
-        {customer && (
-          <Link href="/cliente/pedidos" className="shrink-0 text-sm font-semibold accent-text">
-            Meus pedidos
-          </Link>
-        )}
+        <p className="mt-3 text-sm text-gray-500">
+          Monte seu pedido e nossa equipe entra em contato para fechar.
+        </p>
       </header>
 
       <StoreClient

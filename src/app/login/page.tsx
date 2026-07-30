@@ -1,16 +1,26 @@
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { LoginForm } from '@/components/auth/LoginForm'
+import { BrandMark } from '@/components/ui/BrandMark'
+import { getBranding } from '@/lib/branding'
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const { brand_name, logo_url } = await getBranding()
+
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-4 py-10">
-      <div className="mb-8 text-center">
-        <div className="accent-gradient mx-auto mb-4 h-14 w-14 rounded-2xl" />
-        <h1 className="text-2xl font-bold text-gray-900">Painel do Afiliado</h1>
-        <p className="mt-1 text-sm text-gray-500">Entre para acompanhar sua rede e seus pontos.</p>
+      <div className="mb-8">
+        <BrandMark name={brand_name} logoUrl={logo_url} />
+        <p className="mt-2 text-center text-sm text-gray-500">
+          Entre para acompanhar sua rede e seus pontos.
+        </p>
       </div>
 
-      <LoginForm />
+      {/* LoginForm usa useSearchParams (para o ?next=), que exige Suspense
+          caso a rota seja prerenderizada. */}
+      <Suspense fallback={<div className="h-48 animate-pulse rounded-3xl bg-white" />}>
+        <LoginForm />
+      </Suspense>
 
       <p className="mt-6 text-center text-sm text-gray-500">
         Não tem conta?{' '}

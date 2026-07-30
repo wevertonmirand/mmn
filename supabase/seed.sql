@@ -48,3 +48,11 @@ on conflict (sku) do nothing;
 
 -- Após criar o usuário no Auth, promova-o a admin:
 -- update public.users set is_admin = true where username = 'seu_usuario';
+
+-- Identidade da marca. Editável em /admin/configuracoes → "Identidade da marca".
+-- Só define se ainda estiver no padrão, para não sobrescrever uma
+-- personalização já feita pelo admin ao reaplicar o seed.
+update public.settings
+   set brand_name = 'Shopurbanus MCI'
+ where id = true
+   and brand_name in ('Shopurbanus MCI', '');

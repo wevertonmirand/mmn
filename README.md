@@ -109,7 +109,8 @@ conteúdo de cada arquivo, **nesta ordem**:
 3. `supabase/migrations/20260730000300_rls.sql`
 4. `supabase/migrations/20260730000400_admin_views.sql`
 5. `supabase/migrations/20260730000500_store.sql`
-6. `supabase/seed.sql`
+6. `supabase/migrations/20260730000600_branding.sql`
+7. `supabase/seed.sql`
 
 Pode rodar cada um separadamente ou tudo de uma vez. O SQL é **idempotente**:
 rodar de novo não duplica nada nem dá erro.
@@ -275,6 +276,32 @@ branches geram *Preview Deployments* com URL própria.
 
 # Depois de publicar
 
+## Renomear a marca e trocar os logos
+
+Em **`/admin/configuracoes`** → **Identidade da marca**. Dá para mudar:
+
+- **Nome da marca** — vem como `Shopurbanus MCI`
+- **Frase de apoio** — opcional, aparece abaixo do nome
+- **Logo principal** (horizontal) — cabeçalho da loja e telas de entrada
+- **Ícone quadrado** — app instalado no celular (PWA)
+
+O nome vale também para o título da aba do navegador e para o nome do app
+instalado, então renomear não exige mexer em código nem publicar de novo.
+
+Sem logo cadastrado, o app mostra a inicial do nome sobre o gradiente da
+paleta — nunca fica quebrado.
+
+### Como obter a URL de um logo
+
+1. No Supabase, vá em **Storage** → **New bucket**
+2. Nome `branding`, marque **Public bucket**
+3. Faça upload do arquivo
+4. Clique nele → **Copy URL**
+5. Cole no campo correspondente em `/admin/configuracoes`
+
+PNG com fundo transparente fica melhor. As imagens são exibidas com
+`object-contain`: o logo nunca é cortado nem esticado.
+
 ## Cadastrar seus produtos
 
 Em `/admin/produtos`. O campo **pontos por unidade** é quanto a venda daquele
@@ -327,6 +354,7 @@ supabase/
     ...300_rls.sql           policies, trigger de signup, grants
     ...400_admin_views.sql   views e RPCs do painel admin
     ...500_store.sql         loja: clientes, produtos, pedidos
+    ...600_branding.sql      nome e logos configuráveis
   seed.sql                   ranks, prêmios e produtos de exemplo
 src/
   app/
