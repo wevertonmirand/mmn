@@ -6,6 +6,7 @@ import { Check, Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
+import { ProductGallery } from '@/components/ui/ProductGallery'
 import { placeOrderAction } from '@/lib/actions/store'
 import { cn, formatBRL } from '@/lib/utils'
 import type { CartLine, Customer, PlacedOrder, Product } from '@/lib/types'
@@ -143,14 +144,11 @@ export function StoreClient({ products, customer, sponsorUsername }: StoreClient
           const line = cart.find((item) => item.product_id === product.id)
           return (
             <Card key={product.id} className="flex gap-4">
-              {product.image_url && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={product.image_url}
-                  alt={product.name}
-                  className="h-20 w-20 shrink-0 rounded-xl object-contain"
-                />
-              )}
+              <ProductGallery
+                images={product.images ?? []}
+                alt={product.name}
+                className="w-24 shrink-0"
+              />
 
               <div className="min-w-0 flex-1">
                 <h2 className="font-semibold text-gray-900">{product.name}</h2>

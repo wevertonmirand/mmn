@@ -208,6 +208,16 @@ export type PrizeRequestRow = {
 }
 
 export type OrderStatus = 'novo' | 'em_contato' | 'fechado' | 'cancelado'
+export type SuggestionStatus = 'nova' | 'analisando' | 'concluida' | 'recusada'
+
+export type AppSuggestion = {
+  id: string
+  user_id: string
+  message: string
+  status: SuggestionStatus
+  admin_note: string | null
+  created_at: string
+}
 
 export type Product = {
   id: string
@@ -216,7 +226,10 @@ export type Product = {
   sku: string | null
   price_cents: number
   points_value: number
+  /** capa, mantida em sincronia com images[0] por trigger */
   image_url: string | null
+  /** até 3 fotos; a primeira é a capa */
+  images: string[]
   is_active: boolean
   sort_order: number
 }
@@ -315,6 +328,7 @@ export type Database = {
       crm_customers: Table<CrmCustomer>
       crm_sales: Table<CrmSale>
       commission_ledger: Table<CommissionEntry>
+      app_suggestions: Table<AppSuggestion>
     }
     Views: {
       v_users_at_risk: View<AtRiskUser>
@@ -371,6 +385,7 @@ export type Database = {
       points_origin: PointsOrigin
       material_type: MaterialType
       order_status: OrderStatus
+      suggestion_status: SuggestionStatus
     }
     CompositeTypes: Record<string, never>
   }

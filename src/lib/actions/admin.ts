@@ -127,3 +127,46 @@ export async function closeMonthAction(period?: string): Promise<ActionResult> {
   revalidatePath('/admin/usuarios')
   return { ok: true }
 }
+
+/** Sugestão de melhoria enviada pelo afiliado. */
+export async function submitSuggestionAction(message: string): Promise<ActionResult> {
+  const text = message.trim()
+  if (text.length < 10) return { ok: false, error: 'Descreva sua sugestão com pelo menos 10 caracteres.' }
+  if (text.length > 2000) return { ok: false, error: 'Sua sugestão passou de 2000 caracteres.' }
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { ok: false, error: 'Sessão expirada.' }
+
+  const { error } = await supabase.from('app_suggestions').insert({ user_id: user.id, message: text })
+  if (error) return { ok: false, error: error.message }
+
+  revalidatePath('/perfil')
+  return { ok: true }
+}
+
+/** Envia o e-mail de redefinição de senha para o próprio usuário logado. */
+export async function requestPasswordResetAction(): Promise<ActionResult> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user?.email) return { ok: false, error: 'Sessão expirada.' }
+
+  const base = process.env.NEXT_PUBLIC_SITE_URL ?? ''
+  const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+    redirectTo: `${base}/login`,
+  })
+  if (error) return { ok: false, error: error.message }
+
+  return { ok: true }
+}
+
+/** Define o link de indicação. Só pode ser feito uma vez (RPC valida). */
+export async function changeUsernameAction(username: string): Promise<ActionResult> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('change_my_username', { p_username: username.trim().toLowerCase() })
+  if (error) return { ok: false, error: error.message }
+
+  revalidatePath('/perfil')
+  revalidatePath('/dashboard')
+  return { ok: true }
+}

@@ -58,3 +58,24 @@ export async function changeUsernameAction(formData: FormData): Promise<ActionRe
   revalidatePath('/rede')
   return { ok: true }
 }
+
+/**
+ * Pedido com carrinho: o RPC já aceita vários itens, então a loja interna
+ * envia tudo de uma vez em vez de um pedido por produto.
+ */
+export async function placeInternalCartAction(
+  items: { product_id: string; quantity: number }[],
+): Promise<ActionResult> {
+  if (items.length === 0) return { ok: false, error: 'Seu carrinho está vazio.' }
+  if (items.some((i) => !i.product_id || !Number.isInteger(i.quantity) || i.quantity < 1)) {
+    return { ok: false, error: 'Quantidade inválida no carrinho.' }
+  }
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('place_internal_order', { p_items: items })
+  if (error) return { ok: false, error: error.message }
+
+  revalidatePath('/pedidos')
+  revalidatePath('/estoque')
+  return { ok: true }
+}
