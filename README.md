@@ -110,7 +110,9 @@ conteúdo de cada arquivo, **nesta ordem**:
 4. `supabase/migrations/20260730000400_admin_views.sql`
 5. `supabase/migrations/20260730000500_store.sql`
 6. `supabase/migrations/20260730000600_branding.sql`
-7. `supabase/seed.sql`
+7. `supabase/migrations/20260730000700_first_admin.sql`
+8. `supabase/migrations/20260730000800_auto_sponsor.sql`
+9. `supabase/seed.sql`
 
 Pode rodar cada um separadamente ou tudo de uma vez. O SQL é **idempotente**:
 rodar de novo não duplica nada nem dá erro.
@@ -189,15 +191,60 @@ produtos de exemplo.
 
 ## Passo 7 — Criar seu usuário admin
 
-1. Acesse http://localhost:3000/cadastro e crie sua conta de **afiliado**
-2. No SQL Editor do Supabase, promova-a:
+Acesse http://localhost:3000/cadastro e crie sua conta de **afiliado**.
+
+**O primeiro afiliado cadastrado vira administrador automaticamente**, porque é
+quem está montando a operação e não existe ninguém para promovê-lo. Não precisa
+de link de indicação nem de SQL.
+
+> ⚠️ Por isso, **crie sua conta antes de divulgar a URL**. Em produção, o
+> primeiro a se cadastrar recebe acesso administrativo.
+
+Feito isso, `/admin` passa a responder (antes dava 404 de propósito, para não
+revelar a área a quem não é admin).
+
+### Promover outros admins depois
+
+No SQL Editor, autenticado como admin não é necessário — o Editor roda como
+`postgres`:
 
 ```sql
-update public.users set is_admin = true where username = 'seu_usuario';
+update public.users set is_admin = true where username = 'outro_usuario';
 ```
 
-3. Recarregue a página. `/admin` passa a responder (antes dava 404 de propósito,
-   para não revelar a área a quem não é admin)
+Ou, pela RPC (respeita a regra de nunca deixar a operação sem nenhum admin):
+
+```sql
+select public.set_admin('outro_usuario');          -- promove
+select public.set_admin('outro_usuario', false);   -- remove
+```
+
+### Criar um admin de teste pelo SQL Editor
+
+Para testar rápido, sem passar pelo cadastro: rode
+[`docs/criar-admin-teste.sql`](docs/criar-admin-teste.sql) no SQL Editor. Ele
+cria `admin@admin.com` com senha `admin`, já confirmado e como administrador.
+Rodar de novo apenas redefine a senha.
+
+**O login é por e-mail**, não por nome de usuário — entre com
+`admin@admin.com`. Troque a senha antes de divulgar o site.
+
+### Se precisar criar o admin manualmente
+
+Caso o cadastro pelo site falhe por algum motivo:
+
+1. No Supabase, **Authentication** → **Users** → **Add user**
+2. Informe e-mail e senha e marque **Auto Confirm User**
+3. O perfil é criado automaticamente pelo trigger. Ajuste o usuário e promova:
+
+```sql
+update public.users
+   set username = 'seu_usuario', is_admin = true
+ where email = 'seu@email.com';
+```
+
+Crie o usuário pelo painel do Auth, não com `insert into auth.users`: o
+Supabase cuida do hash da senha e das demais colunas de autenticação.
 
 Pronto — o app está funcionando localmente.
 
@@ -337,7 +384,9 @@ pelo botão em `/admin/usuarios` ou agendada (veja *Operação*, no fim).
 | `relation "public.users" does not exist` | SQL não aplicado | Refaça o Passo 4 na ordem |
 | Erro citando `NEXT_PUBLIC_SUPABASE_URL` | `.env.local` ausente ou incompleto | Passo 5. Reinicie o `npm run dev` depois de editar |
 | Loja vazia | Seed não rodou, ou produtos inativos | `select count(*) from public.products;` |
-| `/admin` dá 404 | Usuário não é admin | Rode o `update ... is_admin = true` do Passo 7 |
+| `/admin` dá 404 | Usuário não é admin | Se não foi o primeiro cadastro, promova conforme o Passo 7 |
+| `Link de indicação inválido` no cadastro | O `?ref=` do link aponta para um usuário que não existe | Cadastre-se sem o `?ref=`, ou confirme o link com quem indicou |
+| Cadastro some sem erro e volta ao login | Confirmação de e-mail ativa no Supabase | **Authentication** → **Providers** → **Email**: desligue *Confirm email*, ou confirme pelo e-mail recebido |
 | Funciona local, quebra na Vercel | Variáveis não estavam no build | Confira as três e faça **Redeploy** |
 | E-mail de confirmação leva a `localhost` | URLs do Auth não configuradas | Passo 4 da Vercel |
 | `npm ci` falha com `EUSAGE` | `package-lock.json` fora de sincronia | `rm -rf node_modules && npm install` |
@@ -421,6 +470,28 @@ marcam `is_inactive = true`. Com 2 meses o afiliado aparece em
 `ranks.maintenance_points` define a meta mensal. O 1º mês abaixo dela apenas
 consome o **grace period**; o 2º mês consecutivo rebaixa um nível
 (`rank_order - 1`).
+
+### Cadastro sem link de indicação
+
+Não existe campo para digitar link: o patrocinador vem sempre do `?ref=` e é
+resolvido no banco, então ninguém escolhe onde entra na árvore.
+
+Quem chega sem link precisa marcar **"Ninguém me indicou"** — uma confirmação
+explícita, para que quem tem link não perca o patrocinador por descuido. O
+banco então direciona ao afiliado mais capacitado, por `fn_pick_best_sponsor`:
+
+1. ativo e com pontuação > 0 (ou admin, que numa operação nova é o único)
+2. menos indicados diretos — distribui o acompanhamento
+3. maior pontuação — entre os igualmente livres, quem produz mais
+4. mais antigo — desempate estável
+
+A ordem evita duas armadilhas. Pontuação em primeiro lugar criaria
+retroalimentação, já que cada indicação recebida rende pontos de recrutamento
+(3x) e manteria a mesma pessoa sempre no topo. Só "menos diretos" entregaria
+sempre ao recém-chegado com zero diretos, o menos capacitado de todos.
+
+Cliente da loja é exceção: sem link, o pedido fica como venda da casa.
+Atribuí-lo a um afiliado daria comissão de uma venda que ele não fez.
 
 ### Cancelamento de venda
 

@@ -28,7 +28,9 @@ export function LoginForm() {
         return
       }
 
-      router.replace(searchParams.get('next') ?? '/dashboard')
+      // '/' roteia por papel: admin vai para /admin, afiliado para
+      // /dashboard, cliente para /loja.
+      router.replace(searchParams.get('next') ?? '/')
       router.refresh()
     })
   }
@@ -37,12 +39,13 @@ export function LoginForm() {
     <Card>
       <form action={submit} className="space-y-3">
         <input name="email" type="email" placeholder="E-mail" required className={FIELD} />
+        {/* Sem minLength: quem valida a senha é o servidor. Exigir tamanho
+            aqui bloqueia o envio de contas com senha curta já existente. */}
         <input
           name="password"
           type="password"
           placeholder="Senha"
           required
-          minLength={6}
           className={FIELD}
         />
         <Button type="submit" disabled={isPending} className="w-full">
