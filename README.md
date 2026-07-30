@@ -112,7 +112,8 @@ conteúdo de cada arquivo, **nesta ordem**:
 6. `supabase/migrations/20260730000600_branding.sql`
 7. `supabase/migrations/20260730000700_first_admin.sql`
 8. `supabase/migrations/20260730000800_auto_sponsor.sql`
-9. `supabase/seed.sql`
+9. `supabase/migrations/20260730000900_auto_username.sql`
+10. `supabase/seed.sql`
 
 Pode rodar cada um separadamente ou tudo de uma vez. O SQL é **idempotente**:
 rodar de novo não duplica nada nem dá erro.
@@ -470,6 +471,27 @@ marcam `is_inactive = true`. Com 2 meses o afiliado aparece em
 `ranks.maintenance_points` define a meta mensal. O 1º mês abaixo dela apenas
 consome o **grace period**; o 2º mês consecutivo rebaixa um nível
 (`rank_order - 1`).
+
+### Código do afiliado
+
+O cadastro pede apenas **nome, e-mail e senha**. O código do afiliado
+(`username`) é gerado no banco a partir do primeiro nome, por
+`fn_generate_username`:
+
+| Nome informado | Código |
+|---|---|
+| Weverton Miranda | `weverton` |
+| José da Silva | `jose` |
+| Ângela Cruz | `angela` |
+| Weverton Souza (já existe `weverton`) | `weverton3094` |
+| Zé | `ze9135` |
+
+Acentos são removidos, maiúsculas normalizadas e o sufixo numérico só entra
+quando o nome puro já está em uso. É identificação visual e endereço de link
+(`/loja/weverton`) — quem manda na rede é o `id`.
+
+Pedir esse campo no cadastro era uma armadilha: a constraint aceita só
+minúsculas sem acento, então digitar o próprio nome era recusado de imediato.
 
 ### Cadastro sem link de indicação
 

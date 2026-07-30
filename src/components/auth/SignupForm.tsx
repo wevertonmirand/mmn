@@ -11,6 +11,11 @@ const FIELD =
   'w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-500/30'
 
 /**
+ * Pede o mínimo: nome, e-mail e senha. O código do afiliado (username) é
+ * gerado no banco a partir do primeiro nome — pedi-lo aqui só produzia o
+ * erro "3 a 30 caracteres, minúsculas" quando a pessoa digitava o próprio
+ * nome com maiúscula ou acento.
+ *
  * Não existe campo para digitar link de indicação: o patrocinador vem do
  * ?ref= e é resolvido no banco, então ninguém escolhe onde entra na árvore.
  *
@@ -28,10 +33,9 @@ export function SignupForm({ sponsorUsername }: { sponsorUsername: string | null
     const email = String(formData.get('email') ?? '')
     const password = String(formData.get('password') ?? '')
     const fullName = String(formData.get('full_name') ?? '').trim()
-    const username = String(formData.get('username') ?? '').trim().toLowerCase()
 
-    if (!/^[a-z0-9._-]{3,30}$/.test(username)) {
-      setError('Usuário deve ter 3 a 30 caracteres: letras minúsculas, números, ponto, hífen ou _.')
+    if (fullName.length < 2) {
+      setError('Informe seu nome completo.')
       return
     }
 
@@ -46,7 +50,9 @@ export function SignupForm({ sponsorUsername }: { sponsorUsername: string | null
         email,
         password,
         options: {
-          data: { full_name: fullName, username, sponsor_username: sponsorUsername },
+          // O código do afiliado é gerado no banco a partir do nome
+          // (fn_generate_username) — nada de pedir isso ao usuário.
+          data: { full_name: fullName, sponsor_username: sponsorUsername },
         },
       })
 
@@ -96,17 +102,11 @@ export function SignupForm({ sponsorUsername }: { sponsorUsername: string | null
       )}
 
       <form action={submit} className="space-y-3">
-        <input name="full_name" placeholder="Nome completo" required className={FIELD} />
-
         <label className="block">
-          <input
-            name="username"
-            placeholder="Escolha seu nome de usuário"
-            required
-            className={FIELD}
-          />
+          <input name="full_name" placeholder="Nome completo" required className={FIELD} />
           <span className="mt-1 block px-1 text-xs text-gray-400">
-            Será o endereço da sua loja e do seu link de indicação.
+            Seu código de afiliado e o endereço da sua loja são criados
+            automaticamente a partir do seu nome.
           </span>
         </label>
 
