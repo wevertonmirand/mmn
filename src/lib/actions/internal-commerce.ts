@@ -27,10 +27,34 @@ export async function saveCommissionsAction(formData: FormData): Promise<ActionR
   if (values.some((v) => !Number.isFinite(v) || v < 0) || values.reduce((a, b) => a + b, 0) > 100) return { ok: false, error: 'Percentuais inválidos: use valores positivos cuja soma seja até 100%.' }
   const patch = { commission_level_1: values[0], commission_level_2: values[1], commission_level_3: values[2], commission_level_4: values[3], commission_level_5: values[4] }
   const supabase = await createClient(); const { error } = await supabase.from('settings').update(patch).eq('id', true)
-  if (error) return { ok: false, error: error.message }; revalidatePath('/admin/comissoes'); return { ok: true }
+  if (error) {
+    if (error.message.includes("commission_level_1") && error.message.includes('schema cache')) {
+      return {
+        ok: false,
+        error: 'O banco ainda não publicou as colunas de comissão. Aplique as migrations 010 e 012 no Supabase e tente novamente.',
+      }
+    }
+    return { ok: false, error: error.message }
+  }
+  revalidatePath('/admin/comissoes'); return { ok: true }
 }
 
 export async function removeAffiliateAction(formData: FormData): Promise<ActionResult> {
   const supabase = await createClient(); const { error } = await supabase.rpc('remove_affiliate', { p_user_id: String(formData.get('user_id')), p_reason: String(formData.get('reason') ?? '') })
   if (error) return { ok: false, error: error.message }; revalidatePath('/admin/usuarios'); return { ok: true }
+}
+
+export async function changeUsernameAction(formData: FormData): Promise<ActionResult> {
+  const username = String(formData.get('username') ?? '').trim().toLowerCase()
+  if (!/^[a-z0-9._-]{3,30}$/.test(username)) {
+    return { ok: false, error: 'Use de 3 a 30 caracteres: letras, números, ponto, hífen ou sublinhado.' }
+  }
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('change_my_username', { p_username: username })
+  if (error) return { ok: false, error: error.message }
+
+  revalidatePath('/dashboard')
+  revalidatePath('/rede')
+  return { ok: true }
 }

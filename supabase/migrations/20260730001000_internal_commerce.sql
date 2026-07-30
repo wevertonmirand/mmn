@@ -148,13 +148,75 @@ begin if not is_admin() then raise exception 'Apenas administradores'; end if; i
  update users set sponsor_id=old where sponsor_id=p_user_id; update users set is_inactive=true where id=p_user_id;
  insert into network_removal_audit(admin_id,removed_user_id,previous_sponsor_id,reassigned_user_ids,reason) values(auth.uid(),p_user_id,old,children,p_reason); end $$;
 
-alter table inventory enable row level security; alter table inventory_ledger enable row level security; alter table crm_customers enable row level security; alter table crm_sales enable row level security; alter table crm_sale_items enable row level security; alter table commission_ledger enable row level security; alter table network_removal_audit enable row level security;
-do $$ declare t text; begin foreach t in array array['inventory','inventory_ledger','crm_customers','crm_sales','commission_ledger'] loop execute format('drop policy if exists own_or_admin on public.%I',t); execute format('create policy own_or_admin on public.%I for select using (user_id=auth.uid() or public.is_admin())',t); end loop; end $$;
-create policy crm_customers_insert on crm_customers for insert with check(user_id=auth.uid()); create policy crm_customers_update on crm_customers for update using(user_id=auth.uid()) with check(user_id=auth.uid());
-create policy crm_sale_items_select on crm_sale_items for select using(exists(select 1 from crm_sales s where s.id=sale_id and (s.user_id=auth.uid() or is_admin())));
-create policy commissions_select on commission_ledger for select using(beneficiary_id=auth.uid() or is_admin()); create policy audits_admin on network_removal_audit for select using(is_admin());
-create policy orders_buyer_select on orders for select using(buyer_id=auth.uid());
+alter table inventory enable row level security;
+alter table inventory_ledger enable row level security;
+alter table crm_customers enable row level security;
+alter table crm_sales enable row level security;
+alter table crm_sale_items enable row level security;
+alter table commission_ledger enable row level security;
+alter table network_removal_audit enable row level security;
+
+-- Policies explícitas: evita aplicar acidentalmente uma expressão baseada em
+-- user_id numa tabela com outra coluna de proprietário, como commission_ledger.
+drop policy if exists own_or_admin on public.inventory;
+create policy own_or_admin on public.inventory
+  for select using (user_id = auth.uid() or public.is_admin());
+
+drop policy if exists own_or_admin on public.inventory_ledger;
+create policy own_or_admin on public.inventory_ledger
+  for select using (user_id = auth.uid() or public.is_admin());
+
+drop policy if exists own_or_admin on public.crm_customers;
+create policy own_or_admin on public.crm_customers
+  for select using (user_id = auth.uid() or public.is_admin());
+
+drop policy if exists own_or_admin on public.crm_sales;
+create policy own_or_admin on public.crm_sales
+  for select using (user_id = auth.uid() or public.is_admin());
+
+-- DROP + CREATE deixa esta seção segura para reaplicação manual depois de
+-- uma execução parcial no SQL Editor.
+drop policy if exists crm_customers_insert on public.crm_customers;
+create policy crm_customers_insert on public.crm_customers
+  for insert with check (user_id = auth.uid());
+
+drop policy if exists crm_customers_update on public.crm_customers;
+create policy crm_customers_update on public.crm_customers
+  for update using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+drop policy if exists crm_sale_items_select on public.crm_sale_items;
+create policy crm_sale_items_select on public.crm_sale_items
+  for select using (
+    exists (
+      select 1 from public.crm_sales s
+      where s.id = sale_id
+        and (s.user_id = auth.uid() or public.is_admin())
+    )
+  );
+
+drop policy if exists commissions_select on public.commission_ledger;
+create policy commissions_select on public.commission_ledger
+  for select using (beneficiary_id = auth.uid() or public.is_admin());
+
+drop policy if exists audits_admin on public.network_removal_audit;
+create policy audits_admin on public.network_removal_audit
+  for select using (public.is_admin());
+
+drop policy if exists orders_buyer_select on public.orders;
+create policy orders_buyer_select on public.orders
+  for select using (buyer_id = auth.uid());
 insert into storage.buckets(id,name,public) values('product-images','product-images',true) on conflict(id) do update set public=true;
-create policy product_images_admin_insert on storage.objects for insert to authenticated with check(bucket_id='product-images' and public.is_admin());
-create policy product_images_admin_update on storage.objects for update to authenticated using(bucket_id='product-images' and public.is_admin());
+drop policy if exists product_images_admin_insert on storage.objects;
+create policy product_images_admin_insert on storage.objects
+  for insert to authenticated
+  with check (bucket_id = 'product-images' and public.is_admin());
+drop policy if exists product_images_admin_update on storage.objects;
+create policy product_images_admin_update on storage.objects
+  for update to authenticated
+  using (bucket_id = 'product-images' and public.is_admin())
+  with check (bucket_id = 'product-images' and public.is_admin());
 grant execute on function place_internal_order(jsonb),create_crm_sale(uuid,jsonb,text),cancel_crm_sale(uuid),remove_affiliate(uuid,text) to authenticated;
+
+-- O SQL Editor pode concluir o DDL antes de o PostgREST atualizar seu cache.
+-- A notificação torna as novas colunas/RPCs disponíveis imediatamente na API.
+notify pgrst, 'reload schema';

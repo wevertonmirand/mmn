@@ -114,7 +114,11 @@ conteúdo de cada arquivo, **nesta ordem**:
 8. `supabase/migrations/20260730000800_auto_sponsor.sql`
 9. `supabase/migrations/20260730000900_auto_username.sql`
 10. `supabase/migrations/20260730001000_internal_commerce.sql`
-11. `supabase/seed.sql`
+11. `supabase/migrations/20260730001100_affiliate_username.sql`
+12. `supabase/migrations/20260730001200_refresh_commerce_schema.sql`
+13. `supabase/migrations/20260730001300_repair_commission_rls.sql`
+14. `supabase/migrations/20260730001400_order_dispatch.sql`
+15. `supabase/seed.sql`
 
 Pode rodar cada um separadamente ou tudo de uma vez. O SQL é **idempotente**:
 rodar de novo não duplica nada nem dá erro.
@@ -263,6 +267,37 @@ saldo/movimentações, `/clientes` para sua carteira e `/comissoes` para o ledge
 aprova/cancela em `/admin/pedidos`, mantém produtos em `/admin/produtos` e configura os cinco níveis
 em `/admin/comissoes`. Aprovação e cancelamento são RPCs atômicas e idempotentes; vendas privadas
 usam `create_crm_sale` e nunca geram pontos ou comissão.
+
+No dashboard, o afiliado pode personalizar o nome usado em `/cadastro?ref=nome` e `/loja/nome`.
+A disponibilidade é verificada antes do envio e confirmada atomicamente pela RPC
+`change_my_username`, de modo que dois usuários nunca consigam reservar o mesmo nome.
+
+### Os dois tipos de pedido
+
+A tabela `orders` atende dois fluxos, distinguidos por qual coluna está
+preenchida:
+
+| Coluna | Quem compra | O que o fechamento faz |
+|---|---|---|
+| `buyer_id` | afiliado comprando estoque | entra em `inventory` e paga comissão em dinheiro na upline |
+| `customer_id` | cliente na loja | gera uma venda por item e distribui pontos na rede |
+
+`close_order` e `cancel_order` despacham pelo tipo (migração `014`). A `010`
+havia substituído `close_order` por uma versão que só aceitava `buyer_id`, e
+isso derrubava a loja de clientes — fechar um pedido respondia
+"Pedido interno não encontrado" sem gerar venda nem pontos.
+
+### Erro de schema cache nas comissões
+
+Se a API responder `Could not find the 'commission_level_1' column ... in the schema cache`,
+a migration `010` não terminou ou o PostgREST ainda está usando o schema anterior. Reaplique a
+`010` completa e execute a `012`. Ambas notificam o PostgREST para recarregar o cache; não é
+necessário apagar dados nem executar `db reset`.
+
+Se aparecer `column "user_id" does not exist` ao criar uma policy de
+`commission_ledger`, o arquivo `010` usado é uma versão antiga. Atualize o repositório, execute a
+versão atual da `010` (que possui policies explícitas) e depois a `013`. A policy correta usa
+`beneficiary_id`; nunca `user_id`.
 
 ---
 
