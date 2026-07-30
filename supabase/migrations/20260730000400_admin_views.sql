@@ -154,5 +154,10 @@ as $$
   ) end;
 $$;
 
+-- As views usam security_invoker, então o RLS de quem chama continua valendo:
+-- um afiliado que consultar estas views só enxerga o que suas policies permitem.
+grant select on public.v_users_at_risk, public.v_pending_cancellations,
+                public.v_prize_requests to authenticated;
+
 grant execute on function public.review_prize_request(uuid, public.prize_status, text) to authenticated;
 grant execute on function public.get_admin_stats() to authenticated;

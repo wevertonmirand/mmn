@@ -208,14 +208,17 @@ begin
 end;
 $$;
 
+drop trigger if exists users_touch_updated_at on public.users;
 create trigger users_touch_updated_at
   before update on public.users
   for each row execute function public.fn_touch_updated_at();
 
+drop trigger if exists prizes_touch_updated_at on public.prizes;
 create trigger prizes_touch_updated_at
   before update on public.prizes
   for each row execute function public.fn_touch_updated_at();
 
+drop trigger if exists settings_touch_updated_at on public.settings;
 create trigger settings_touch_updated_at
   before update on public.settings
   for each row execute function public.fn_touch_updated_at();

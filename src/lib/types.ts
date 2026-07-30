@@ -4,7 +4,7 @@ export type PointsOrigin = 'sale' | 'recruitment' | 'adjustment'
 export type MaterialType = 'banner' | 'video' | 'documento'
 export type ThemeName = 'gold' | 'slate' | 'emerald'
 
-export interface UserRow {
+export type UserRow = {
   id: string
   sponsor_id: string | null
   username: string
@@ -21,7 +21,7 @@ export interface UserRow {
   joined_at: string
 }
 
-export interface Rank {
+export type Rank = {
   id: string
   name: string
   rank_order: number
@@ -30,7 +30,7 @@ export interface Rank {
   description: string | null
 }
 
-export interface Settings {
+export type Settings = {
   id: boolean
   min_products_monthly: number
   max_network_levels: number
@@ -40,7 +40,7 @@ export interface Settings {
   theme: ThemeName
 }
 
-export interface Sale {
+export type Sale = {
   id: string
   user_id: string
   product_name: string
@@ -54,7 +54,7 @@ export interface Sale {
   sold_at: string
 }
 
-export interface Prize {
+export type Prize = {
   id: string
   name: string
   description: string | null
@@ -64,7 +64,7 @@ export interface Prize {
   sort_order: number
 }
 
-export interface MarketingMaterial {
+export type MarketingMaterial = {
   id: string
   title: string
   description: string | null
@@ -72,10 +72,11 @@ export interface MarketingMaterial {
   file_url: string
   width: number | null
   height: number | null
+  is_active: boolean
   sort_order: number
 }
 
-export interface DownlineNode {
+export type DownlineNode = {
   user_id: string
   username: string
   full_name: string
@@ -87,7 +88,7 @@ export interface DownlineNode {
   joined_at: string
 }
 
-export interface DashboardPayload {
+export type DashboardPayload = {
   user: {
     id: string
     username: string
@@ -115,7 +116,7 @@ export interface DashboardPayload {
   network: { total: number; directs: number }
 }
 
-export interface AdminStats {
+export type AdminStats = {
   total_users: number
   active_users: number
   inactive_users: number
@@ -126,7 +127,7 @@ export interface AdminStats {
   points_this_month: number
 }
 
-export interface PendingCancellation {
+export type PendingCancellation = {
   id: string
   product_name: string
   quantity: number
@@ -143,7 +144,7 @@ export interface PendingCancellation {
   affected_users: number
 }
 
-export interface AtRiskUser {
+export type AtRiskUser = {
   id: string
   username: string
   full_name: string
@@ -158,7 +159,7 @@ export interface AtRiskUser {
   min_required: number
 }
 
-export interface PrizeRequestRow {
+export type PrizeRequestRow = {
   id: string
   status: PrizeStatus
   points_at_time: number
@@ -176,27 +177,65 @@ export interface PrizeRequestRow {
   lifetime_points: number
 }
 
+type Table<Row> = { Row: Row; Insert: Partial<Row>; Update: Partial<Row>; Relationships: [] }
+type View<Row> = { Row: Row; Relationships: [] }
+
 // Tipagem mínima para o cliente Supabase. Substitua por
 // `supabase gen types typescript` quando o projeto estiver linkado.
-export interface Database {
+export type Database = {
   public: {
     Tables: {
-      users: { Row: UserRow; Insert: Partial<UserRow>; Update: Partial<UserRow> }
-      ranks: { Row: Rank; Insert: Partial<Rank>; Update: Partial<Rank> }
-      settings: { Row: Settings; Insert: Partial<Settings>; Update: Partial<Settings> }
-      sales: { Row: Sale; Insert: Partial<Sale>; Update: Partial<Sale> }
-      prizes: { Row: Prize; Insert: Partial<Prize>; Update: Partial<Prize> }
-      marketing_materials: {
-        Row: MarketingMaterial
-        Insert: Partial<MarketingMaterial>
-        Update: Partial<MarketingMaterial>
-      }
+      users: Table<UserRow>
+      ranks: Table<Rank>
+      settings: Table<Settings>
+      sales: Table<Sale>
+      prizes: Table<Prize>
+      prize_requests: Table<{
+        id: string
+        user_id: string
+        prize_id: string
+        points_at_time: number
+        status: PrizeStatus
+        admin_notes: string | null
+        requested_at: string
+        delivered_at: string | null
+      }>
+      marketing_materials: Table<MarketingMaterial>
     }
     Views: {
-      v_users_at_risk: { Row: AtRiskUser }
-      v_pending_cancellations: { Row: PendingCancellation }
-      v_prize_requests: { Row: PrizeRequestRow }
+      v_users_at_risk: View<AtRiskUser>
+      v_pending_cancellations: View<PendingCancellation>
+      v_prize_requests: View<PrizeRequestRow>
     }
-    Functions: Record<string, unknown>
+    Functions: {
+      get_my_dashboard: { Args: Record<string, never>; Returns: DashboardPayload }
+      get_admin_stats: { Args: Record<string, never>; Returns: AdminStats }
+      get_full_downline: { Args: { p_root: string }; Returns: DownlineNode[] }
+      get_compressed_downline: {
+        Args: { p_root: string; p_max_level?: number | null }
+        Returns: DownlineNode[]
+      }
+      request_prize: { Args: { p_prize_id: string }; Returns: unknown }
+      request_sale_cancellation: {
+        Args: { p_sale_id: string; p_reason?: string | null }
+        Returns: Sale
+      }
+      review_sale_cancellation: {
+        Args: { p_sale_id: string; p_approve: boolean }
+        Returns: Sale
+      }
+      review_prize_request: {
+        Args: { p_request_id: string; p_status: PrizeStatus; p_notes?: string | null }
+        Returns: unknown
+      }
+      fn_close_month: { Args: { p_period?: string | null }; Returns: unknown }
+    }
+    Enums: {
+      sale_status: SaleStatus
+      prize_status: PrizeStatus
+      points_origin: PointsOrigin
+      material_type: MaterialType
+    }
+    CompositeTypes: Record<string, never>
   }
 }

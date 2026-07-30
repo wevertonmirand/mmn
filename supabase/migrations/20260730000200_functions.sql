@@ -77,6 +77,7 @@ begin
 end;
 $$;
 
+drop trigger if exists users_prevent_sponsor_cycle on public.users;
 create trigger users_prevent_sponsor_cycle
   before insert or update of sponsor_id on public.users
   for each row execute function public.fn_prevent_sponsor_cycle();
@@ -330,6 +331,7 @@ begin
 end;
 $$;
 
+drop trigger if exists points_ledger_sync_lifetime on public.points_ledger;
 create trigger points_ledger_sync_lifetime
   after insert on public.points_ledger
   for each row execute function public.fn_sync_lifetime_points();
@@ -354,6 +356,7 @@ begin
 end;
 $$;
 
+drop trigger if exists sales_award_points on public.sales;
 create trigger sales_award_points
   after insert on public.sales
   for each row execute function public.fn_sale_award_points();
@@ -383,6 +386,7 @@ begin
 end;
 $$;
 
+drop trigger if exists users_award_recruitment_points on public.users;
 create trigger users_award_recruitment_points
   after insert on public.users
   for each row execute function public.fn_recruitment_award_points();
@@ -490,8 +494,15 @@ $$;
 -- 2) Graduação: 1 mês de grace period. 2 meses consecutivos
 --    abaixo dos pontos de manutenção -> rebaixa 1 rank.
 -- =============================================================
+-- Os nomes das colunas de saída são prefixados para não colidirem com as
+-- colunas de monthly_activity dentro do corpo PL/pgSQL (ON CONFLICT).
 create or replace function public.fn_close_month(p_period date default null)
-returns table (user_id uuid, is_active boolean, became_inactive boolean, demoted boolean)
+returns table (
+  out_user_id         uuid,
+  out_is_active       boolean,
+  out_became_inactive boolean,
+  out_demoted         boolean
+)
 language plpgsql
 security definer
 set search_path = public
