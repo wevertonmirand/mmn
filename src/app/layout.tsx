@@ -17,7 +17,7 @@ export const viewport: Viewport = {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: settings } = await supabase
     .from('settings')
     .select('theme')

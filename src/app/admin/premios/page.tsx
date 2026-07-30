@@ -6,7 +6,7 @@ import type { Prize, PrizeRequestRow } from '@/lib/types'
 export const dynamic = 'force-dynamic'
 
 export default async function PremiosPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const [{ data: requests }, { data: prizes }] = await Promise.all([
     supabase.from('v_prize_requests').select('*'),

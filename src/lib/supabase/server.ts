@@ -3,8 +3,9 @@ import { cookies } from 'next/headers'
 import type { Database } from '@/lib/types'
 import { supabaseKey, supabaseUrl } from '@/lib/supabase/env'
 
-export function createClient() {
-  const cookieStore = cookies()
+/** Assíncrona porque `cookies()` passou a retornar Promise no Next 15+. */
+export async function createClient() {
+  const cookieStore = await cookies()
 
   return createServerClient<Database>(
     supabaseUrl(),

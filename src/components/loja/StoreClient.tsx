@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState, useTransition } from 'react'
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Check, Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
@@ -29,7 +29,11 @@ export function StoreClient({ products, customer, ref }: StoreClientProps) {
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
-  // o carrinho sobrevive ao cadastro/login do cliente
+  // O carrinho sobrevive ao cadastro/login do cliente. A leitura precisa
+  // acontecer depois da montagem: no servidor não existe localStorage, e ler
+  // no inicializador do useState faria o HTML hidratado divergir do render
+  // do servidor. O custo é um render extra na montagem.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem(CART_KEY)
@@ -38,8 +42,15 @@ export function StoreClient({ products, customer, ref }: StoreClientProps) {
       setCart([])
     }
   }, [])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
+  // `hydrated` evita apagar o carrinho salvo com o [] do primeiro render.
+  const hydrated = useRef(false)
   useEffect(() => {
+    if (!hydrated.current) {
+      hydrated.current = true
+      return
+    }
     window.localStorage.setItem(CART_KEY, JSON.stringify(cart))
   }, [cart])
 

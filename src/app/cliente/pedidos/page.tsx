@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic'
 type OrderWithItems = Order & { order_items: OrderItem[] }
 
 export default async function MeusPedidosPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 

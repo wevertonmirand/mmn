@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 export type ActionResult = { ok: true } | { ok: false; error: string }
 
 export async function createSaleAction(formData: FormData): Promise<ActionResult> {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { ok: false, error: 'Sessão expirada. Faça login novamente.' }
 
@@ -49,7 +49,7 @@ export async function requestSaleCancellationAction(
   saleId: string,
   reason: string,
 ): Promise<ActionResult> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { error } = await supabase.rpc('request_sale_cancellation', {
     p_sale_id: saleId,

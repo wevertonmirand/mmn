@@ -6,7 +6,7 @@ import type { DownlineNode } from '@/lib/types'
 export const dynamic = 'force-dynamic'
 
 export default async function RedePage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   // get_full_downline valida no servidor que a raiz é o próprio usuário

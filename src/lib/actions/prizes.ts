@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import type { ActionResult } from '@/lib/actions/sales'
 
 export async function requestPrizeAction(prizeId: string): Promise<ActionResult> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { error } = await supabase.rpc('request_prize', { p_prize_id: prizeId })
   if (error) return { ok: false, error: error.message }

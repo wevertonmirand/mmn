@@ -5,7 +5,7 @@ import type { Customer, Product } from '@/lib/types'
 
 /** Vitrine compartilhada por /loja e /loja/[ref]. */
 export async function StorePage({ ref }: { ref: string | null }) {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const [{ data: products }, { data: { user } }] = await Promise.all([
     supabase
