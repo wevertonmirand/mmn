@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import type { Database } from '@/lib/types'
+import { supabaseKey, supabaseUrl } from '@/lib/supabase/env'
 
 /** Rotas que não exigem sessão. A vitrine é aberta: o afiliado
  *  compartilha /loja/usuario e o visitante precisa poder ver os produtos. */
@@ -16,8 +17,8 @@ export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request })
 
   const supabase = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl(),
+    supabaseKey(),
     {
       cookies: {
         getAll() {
