@@ -42,7 +42,18 @@ export type Settings = {
   brand_tagline: string | null
   logo_url: string | null
   logo_icon_url: string | null
+  commission_level_1: number
+  commission_level_2: number
+  commission_level_3: number
+  commission_level_4: number
+  commission_level_5: number
 }
+
+export type Inventory = { user_id:string; product_id:string; available_quantity:number; sold_quantity:number; average_cost_cents:number; updated_at:string; products?:{name:string}|null }
+export type InventoryMovement = { id:string; user_id:string; product_id:string; quantity:number; unit_cost_cents:number; kind:'order_in'|'order_reversal'|'crm_sale'|'crm_cancellation'; order_id:string|null; crm_sale_id:string|null; reverses_id:string|null; created_at:string; products?:{name:string}|null }
+export type CrmCustomer = { id:string; user_id:string; name:string; email:string|null; phone:string|null; notes:string|null; created_at:string }
+export type CrmSale = { id:string; user_id:string; customer_id:string|null; total_cents:number; cost_cents:number; status:'completed'|'cancelled'; idempotency_key:string; sold_at:string; cancelled_at:string|null }
+export type CommissionEntry = { id:string; order_id:string; beneficiary_id:string; buyer_id:string; level:number; percentage:number; base_cents:number; amount_cents:number; status:'credited'|'reversed'; is_reversal:boolean; reverses_id:string|null; created_at:string }
 
 /** Recorte de `settings` legível sem sessão (a vitrine é pública). */
 export type PublicBranding = {
@@ -299,6 +310,11 @@ export type Database = {
       customers: Table<Customer>
       orders: Table<Order>
       order_items: Table<OrderItem & { id: string; order_id: string; product_id: string | null }>
+      inventory: Table<Inventory>
+      inventory_ledger: Table<InventoryMovement>
+      crm_customers: Table<CrmCustomer>
+      crm_sales: Table<CrmSale>
+      commission_ledger: Table<CommissionEntry>
     }
     Views: {
       v_users_at_risk: View<AtRiskUser>
@@ -342,6 +358,10 @@ export type Database = {
       mark_order_contacted: { Args: { p_order_id: string; p_notes?: string | null }; Returns: Order }
       close_order: { Args: { p_order_id: string; p_notes?: string | null }; Returns: unknown }
       cancel_order: { Args: { p_order_id: string; p_notes?: string | null }; Returns: unknown }
+      place_internal_order: { Args: { p_items: { product_id:string; quantity:number }[] }; Returns: PlacedOrder }
+      create_crm_sale: { Args: { p_customer_id:string|null; p_items:{product_id:string;quantity:number;unit_price_cents:number}[];p_idempotency_key:string }; Returns:string }
+      cancel_crm_sale: { Args:{p_sale_id:string};Returns:undefined }
+      remove_affiliate: { Args:{p_user_id:string;p_reason:string};Returns:undefined }
     }
     Enums: {
       sale_status: SaleStatus
