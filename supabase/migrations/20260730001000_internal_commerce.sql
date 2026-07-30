@@ -156,25 +156,23 @@ alter table crm_sale_items enable row level security;
 alter table commission_ledger enable row level security;
 alter table network_removal_audit enable row level security;
 
--- As quatro tabelas abaixo possuem user_id. commission_ledger é tratada
--- separadamente porque o dono da linha é beneficiary_id, não user_id.
-do $$
-declare
-  v_table text;
-begin
-  foreach v_table in array array[
-    'inventory',
-    'inventory_ledger',
-    'crm_customers',
-    'crm_sales'
-  ] loop
-    execute format('drop policy if exists own_or_admin on public.%I', v_table);
-    execute format(
-      'create policy own_or_admin on public.%I for select using (user_id = auth.uid() or public.is_admin())',
-      v_table
-    );
-  end loop;
-end $$;
+-- Policies explícitas: evita aplicar acidentalmente uma expressão baseada em
+-- user_id numa tabela com outra coluna de proprietário, como commission_ledger.
+drop policy if exists own_or_admin on public.inventory;
+create policy own_or_admin on public.inventory
+  for select using (user_id = auth.uid() or public.is_admin());
+
+drop policy if exists own_or_admin on public.inventory_ledger;
+create policy own_or_admin on public.inventory_ledger
+  for select using (user_id = auth.uid() or public.is_admin());
+
+drop policy if exists own_or_admin on public.crm_customers;
+create policy own_or_admin on public.crm_customers
+  for select using (user_id = auth.uid() or public.is_admin());
+
+drop policy if exists own_or_admin on public.crm_sales;
+create policy own_or_admin on public.crm_sales
+  for select using (user_id = auth.uid() or public.is_admin());
 
 -- DROP + CREATE deixa esta seção segura para reaplicação manual depois de
 -- uma execução parcial no SQL Editor.

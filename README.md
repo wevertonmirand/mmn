@@ -116,7 +116,8 @@ conteúdo de cada arquivo, **nesta ordem**:
 10. `supabase/migrations/20260730001000_internal_commerce.sql`
 11. `supabase/migrations/20260730001100_affiliate_username.sql`
 12. `supabase/migrations/20260730001200_refresh_commerce_schema.sql`
-13. `supabase/seed.sql`
+13. `supabase/migrations/20260730001300_repair_commission_rls.sql`
+14. `supabase/seed.sql`
 
 Pode rodar cada um separadamente ou tudo de uma vez. O SQL é **idempotente**:
 rodar de novo não duplica nada nem dá erro.
@@ -276,6 +277,11 @@ Se a API responder `Could not find the 'commission_level_1' column ... in the sc
 a migration `010` não terminou ou o PostgREST ainda está usando o schema anterior. Reaplique a
 `010` completa e execute a `012`. Ambas notificam o PostgREST para recarregar o cache; não é
 necessário apagar dados nem executar `db reset`.
+
+Se aparecer `column "user_id" does not exist` ao criar uma policy de
+`commission_ledger`, o arquivo `010` usado é uma versão antiga. Atualize o repositório, execute a
+versão atual da `010` (que possui policies explícitas) e depois a `013`. A policy correta usa
+`beneficiary_id`; nunca `user_id`.
 
 ---
 
