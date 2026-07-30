@@ -1,14 +1,14 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Home, ImageIcon, Network, Receipt, ShieldCheck, ShoppingBag } from 'lucide-react'
+import { Home, Network, Package, Receipt, ShieldCheck, ShoppingBag } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 
 const NAV = [
   { href: '/dashboard', label: 'Início', Icon: Home },
-  { href: '/vendas', label: 'Vendas', Icon: ShoppingBag },
+  { href: '/comprar', label: 'Loja', Icon: ShoppingBag },
+  { href: '/estoque', label: 'Estoque', Icon: Package },
   { href: '/pedidos', label: 'Pedidos', Icon: Receipt },
   { href: '/rede', label: 'Rede', Icon: Network },
-  { href: '/materiais', label: 'Materiais', Icon: ImageIcon },
 ]
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {

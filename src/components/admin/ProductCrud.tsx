@@ -109,6 +109,9 @@ export function ProductCrud({ products }: { products: Product[] }) {
             placeholder="URL da imagem (opcional)"
             className={FIELD}
           />
+          <label className="block text-sm text-gray-600">Ou envie uma imagem
+            <input name="image" type="file" accept="image/jpeg,image/png,image/webp" className={`${FIELD} mt-1 bg-white`} />
+          </label>
 
           <label className="flex items-center gap-2 text-sm text-gray-700">
             <input

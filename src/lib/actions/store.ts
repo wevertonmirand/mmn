@@ -55,7 +55,7 @@ export async function upsertProductAction(formData: FormData): Promise<ActionRes
   const sku = String(formData.get('sku') ?? '').trim()
   const priceReais = Number(String(formData.get('price') ?? '0').replace(',', '.'))
   const pointsValue = Number(formData.get('points_value') ?? 0)
-  const imageUrl = String(formData.get('image_url') ?? '').trim()
+  let imageUrl = String(formData.get('image_url') ?? '').trim()
   const isActive = formData.get('is_active') === 'on'
 
   if (!name) return { ok: false, error: 'Informe o nome do produto.' }
@@ -64,6 +64,15 @@ export async function upsertProductAction(formData: FormData): Promise<ActionRes
   }
   if (!Number.isInteger(pointsValue) || pointsValue < 0) {
     return { ok: false, error: 'Pontos devem ser um inteiro não negativo.' }
+  }
+  const image = formData.get('image')
+  if (image instanceof File && image.size > 0) {
+    if (image.size > 5_000_000 || !['image/jpeg', 'image/png', 'image/webp'].includes(image.type)) return { ok: false, error: 'A imagem deve ser JPG, PNG ou WebP e ter até 5 MB.' }
+    const extension = image.name.split('.').pop()?.toLowerCase() || 'webp'
+    const path = `${crypto.randomUUID()}.${extension}`
+    const { error: uploadError } = await supabase.storage.from('product-images').upload(path, image, { contentType: image.type })
+    if (uploadError) return { ok: false, error: uploadError.message }
+    imageUrl = supabase.storage.from('product-images').getPublicUrl(path).data.publicUrl
   }
 
   const payload = {
