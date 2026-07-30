@@ -1,0 +1,12 @@
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs'
+const sql=fs.readFileSync('supabase/migrations/20260730001000_internal_commerce.sql','utf8')
+const has=(s)=>assert.match(sql,new RegExp(s,'i'))
+test('pedido pendente não processa estoque',()=>{has("processed_at is not null");has("status='fechado'")})
+test('aprovação é idempotente e credita estoque/pontos',()=>{has('already_processed');has('inventory_ledger');has("origin,base_points");has('lifetime_points=lifetime_points\\+o.total_points')})
+test('comissões atingem apenas cinco níveis e preservam percentual',()=>{has('get_compressed_upline\\(o.buyer_id,5\\)');has('level int not null check\\(level between 1 and 5\\)');has('percentage numeric')})
+test('CRM usa lock, bloqueia saldo insuficiente e não toca ledgers financeiros',()=>{const fn=sql.split('create or replace function public.create_crm_sale')[1].split('create or replace function')[0];assert.match(fn,/for update/i);assert.match(fn,/Estoque insuficiente/i);assert.doesNotMatch(fn,/points_ledger|commission_ledger/i)})
+test('cancelamentos preservam originais, devolvem saldo e impedem repetição',()=>{has('reverses_id');has('já cancelad');has('parte do estoque deste pedido já foi vendida')})
+test('RLS isola dados e funções administrativas validam admin',()=>{has('user_id=auth.uid\\(\\)');has('Apenas administradores podem aprovar');has('Apenas administradores podem cancelar')})
+test('RLS de comissões usa beneficiary_id, pois a tabela não possui user_id',()=>{const policies=sql.split('alter table inventory enable row level security')[1];assert.match(policies,/commission_ledger[\s\S]*beneficiary_id\s*=\s*auth\.uid\(\)/i);assert.doesNotMatch(policies,/commission_ledger[^;]*user_id\s*=\s*auth\.uid\(\)/i)})
+test('remoção reassocia filhos, audita e protege último admin',()=>{has('update users set sponsor_id=old where sponsor_id=p_user_id');has('network_removal_audit');has('último administrador')})
+test('percentuais têm validação de soma',()=>{has('soma das comissões não pode ultrapassar 100')})

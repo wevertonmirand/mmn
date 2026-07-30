@@ -113,7 +113,9 @@ conteúdo de cada arquivo, **nesta ordem**:
 7. `supabase/migrations/20260730000700_first_admin.sql`
 8. `supabase/migrations/20260730000800_auto_sponsor.sql`
 9. `supabase/migrations/20260730000900_auto_username.sql`
-10. `supabase/seed.sql`
+10. `supabase/migrations/20260730001000_internal_commerce.sql`
+11. `supabase/migrations/20260730001100_affiliate_username.sql`
+12. `supabase/seed.sql`
 
 Pode rodar cada um separadamente ou tudo de uma vez. O SQL é **idempotente**:
 rodar de novo não duplica nada nem dá erro.
@@ -250,6 +252,22 @@ Crie o usuário pelo painel do Auth, não com `insert into auth.users`: o
 Supabase cuida do hash da senha e das demais colunas de autenticação.
 
 Pronto — o app está funcionando localmente.
+
+## Loja interna, estoque e CRM
+
+A migration `01000_internal_commerce` adapta o catálogo e os pedidos existentes e adiciona os
+ledgers de estoque e comissão. Ela também cria o bucket público `product-images`; somente admins
+podem gravar nele. Não exponha uma chave `service_role` no frontend.
+
+O afiliado usa `/comprar` para pedidos oficiais, `/pedidos` para acompanhamento, `/estoque` para
+saldo/movimentações, `/clientes` para sua carteira e `/comissoes` para o ledger recebido. O admin
+aprova/cancela em `/admin/pedidos`, mantém produtos em `/admin/produtos` e configura os cinco níveis
+em `/admin/comissoes`. Aprovação e cancelamento são RPCs atômicas e idempotentes; vendas privadas
+usam `create_crm_sale` e nunca geram pontos ou comissão.
+
+No dashboard, o afiliado pode personalizar o nome usado em `/cadastro?ref=nome` e `/loja/nome`.
+A disponibilidade é verificada antes do envio e confirmada atomicamente pela RPC
+`change_my_username`, de modo que dois usuários nunca consigam reservar o mesmo nome.
 
 ---
 
