@@ -9,6 +9,6 @@ export default async function LojaComIndicacaoPage({
   params: Promise<{ ref: string }>
 }) {
   const { ref: raw } = await params
-  const ref = raw.toLowerCase().replace(/[^a-z0-9._-]/g, '') || null
-  return <StorePage ref={ref} />
+  const sponsorUsername = raw.toLowerCase().replace(/[^a-z0-9._-]/g, '') || null
+  return <StorePage sponsorUsername={sponsorUsername} />
 }

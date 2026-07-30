@@ -4,7 +4,7 @@ import { StoreClient } from '@/components/loja/StoreClient'
 import type { Customer, Product } from '@/lib/types'
 
 /** Vitrine compartilhada por /loja e /loja/[ref]. */
-export async function StorePage({ ref }: { ref: string | null }) {
+export async function StorePage({ sponsorUsername }: { sponsorUsername: string | null }) {
   const supabase = await createClient()
 
   const [{ data: products }, { data: { user } }] = await Promise.all([
@@ -47,7 +47,7 @@ export async function StorePage({ ref }: { ref: string | null }) {
       <StoreClient
         products={(products ?? []) as Product[]}
         customer={customer}
-        ref={ref}
+        sponsorUsername={sponsorUsername}
       />
     </main>
   )
