@@ -11,6 +11,7 @@ const NAV = [
   { href: '/admin/comissoes', label: 'Comissões' },
   { href: '/admin/cancelamentos', label: 'Cancelamentos' },
   { href: '/admin/usuarios', label: 'Usuários' },
+  { href: '/admin/rede', label: 'Rede' },
   { href: '/admin/premios', label: 'Prêmios' },
   { href: '/admin/configuracoes', label: 'Configurações' },
 ]
