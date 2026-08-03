@@ -101,16 +101,33 @@ export type MarketingMaterial = {
   sort_order: number
 }
 
-export type DownlineNode = {
+/**
+ * Nó da árvore de rede, como as RPCs `get_my_network_children` e
+ * `get_admin_network_children` devolvem.
+ *
+ * Quase tudo é anulável de propósito: o banco redige os campos sensíveis
+ * fora do nível 1 (o afiliado só contata quem ele mesmo indicou). Tipar
+ * assim obriga a UI a tratar a ausência em vez de assumir que veio.
+ */
+export type NetworkNode = {
   user_id: string
-  username: string
+  /** único campo sempre presente */
   full_name: string
-  sponsor_id: string | null
-  depth: number
-  is_inactive: boolean
-  lifetime_points: number
+  username: string | null
+  phone: string | null
+  /** nível relativo ao afiliado; null na visão do admin */
+  depth: number | null
+  is_inactive: boolean | null
+  lifetime_points: number | null
   rank_name: string | null
-  joined_at: string
+  joined_at: string | null
+  /** indicados diretos */
+  direct_count: number | null
+  /** rede da pessoa, 5 níveis abaixo dela */
+  network_count: number | null
+  can_expand: boolean
+  /** total de irmãos, para paginar */
+  total_children: number
 }
 
 export type DashboardPayload = {
@@ -208,6 +225,16 @@ export type PrizeRequestRow = {
 }
 
 export type OrderStatus = 'novo' | 'em_contato' | 'fechado' | 'cancelado'
+export type SuggestionStatus = 'nova' | 'analisando' | 'concluida' | 'recusada'
+
+export type AppSuggestion = {
+  id: string
+  user_id: string
+  message: string
+  status: SuggestionStatus
+  admin_note: string | null
+  created_at: string
+}
 
 export type Product = {
   id: string
@@ -216,7 +243,10 @@ export type Product = {
   sku: string | null
   price_cents: number
   points_value: number
+  /** capa, mantida em sincronia com images[0] por trigger */
   image_url: string | null
+  /** até 3 fotos; a primeira é a capa */
+  images: string[]
   is_active: boolean
   sort_order: number
 }
@@ -315,6 +345,7 @@ export type Database = {
       crm_customers: Table<CrmCustomer>
       crm_sales: Table<CrmSale>
       commission_ledger: Table<CommissionEntry>
+      app_suggestions: Table<AppSuggestion>
     }
     Views: {
       v_users_at_risk: View<AtRiskUser>
@@ -326,10 +357,28 @@ export type Database = {
     Functions: {
       get_my_dashboard: { Args: Record<string, never>; Returns: DashboardPayload }
       get_admin_stats: { Args: Record<string, never>; Returns: AdminStats }
-      get_full_downline: { Args: { p_root: string }; Returns: DownlineNode[] }
-      get_compressed_downline: {
-        Args: { p_root: string; p_max_level?: number | null }
-        Returns: DownlineNode[]
+      // get_full_downline / get_compressed_downline / get_compressed_upline
+      // não estão aqui de propósito: leem a árvore inteira sem redação e
+      // foram revogadas do cliente na migração 016.
+      get_my_network_children: {
+        Args: { p_parent?: string | null; p_limit?: number; p_offset?: number }
+        Returns: NetworkNode[]
+      }
+      get_admin_network_children: {
+        Args: { p_parent?: string | null; p_limit?: number; p_offset?: number }
+        Returns: NetworkNode[]
+      }
+      search_network: {
+        Args: { p_term: string; p_limit?: number }
+        Returns: {
+          user_id: string
+          full_name: string
+          username: string | null
+          phone: string | null
+          is_inactive: boolean
+          path_ids: string[]
+          path_names: string[]
+        }[]
       }
       request_prize: { Args: { p_prize_id: string }; Returns: unknown }
       request_sale_cancellation: {
@@ -371,6 +420,7 @@ export type Database = {
       points_origin: PointsOrigin
       material_type: MaterialType
       order_status: OrderStatus
+      suggestion_status: SuggestionStatus
     }
     CompositeTypes: Record<string, never>
   }

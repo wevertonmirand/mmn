@@ -103,15 +103,34 @@ export function ProductCrud({ products }: { products: Product[] }) {
             </label>
           </div>
 
-          <input
-            name="image_url"
-            defaultValue={editing?.image_url ?? ''}
-            placeholder="URL da imagem (opcional)"
-            className={FIELD}
-          />
-          <label className="block text-sm text-gray-600">Ou envie uma imagem
-            <input name="image" type="file" accept="image/jpeg,image/png,image/webp" className={`${FIELD} mt-1 bg-white`} />
-          </label>
+          <div className="rounded-2xl bg-white p-3">
+            <p className="text-xs font-medium text-gray-700">Fotos do produto (até 3)</p>
+            <p className="mt-0.5 text-xs text-gray-500">
+              A primeira é a capa que aparece na listagem. Suba os arquivos no Storage do
+              Supabase (bucket público) e cole as URLs. As fotos são exibidas com
+              <code className="mx-1 rounded bg-slate-100 px-1">object-contain</code>, sem corte.
+            </p>
+            <div className="mt-2 space-y-2">
+              {[0, 1, 2].map((index) => (
+                <input
+                  key={index}
+                  name={`image_${index}`}
+                  defaultValue={editing?.images?.[index] ?? (index === 0 ? editing?.image_url ?? '' : '')}
+                  placeholder={index === 0 ? 'URL da foto de capa' : `URL da foto ${index + 1} (opcional)`}
+                  className={FIELD}
+                />
+              ))}
+            </div>
+            <label className="mt-2 block text-xs text-gray-600">
+              Ou envie um arquivo para a capa
+              <input
+                name="image"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className={`${FIELD} mt-1 bg-white`}
+              />
+            </label>
+          </div>
 
           <label className="flex items-center gap-2 text-sm text-gray-700">
             <input

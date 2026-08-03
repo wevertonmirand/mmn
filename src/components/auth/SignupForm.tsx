@@ -33,9 +33,18 @@ export function SignupForm({ sponsorUsername }: { sponsorUsername: string | null
     const email = String(formData.get('email') ?? '')
     const password = String(formData.get('password') ?? '')
     const fullName = String(formData.get('full_name') ?? '').trim()
+    const phone = String(formData.get('phone') ?? '')
+    const digits = phone.replace(/\D/g, '')
 
     if (fullName.length < 2) {
       setError('Informe seu nome completo.')
+      return
+    }
+
+    // O admin acompanha a rede pelo WhatsApp; sem ele o afiliado fica
+    // inalcançável. O banco recusa o cadastro de qualquer forma.
+    if (digits.length < 10) {
+      setError('Informe seu WhatsApp com DDD, ex.: (11) 98888-7777.')
       return
     }
 
@@ -52,7 +61,7 @@ export function SignupForm({ sponsorUsername }: { sponsorUsername: string | null
         options: {
           // O código do afiliado é gerado no banco a partir do nome
           // (fn_generate_username) — nada de pedir isso ao usuário.
-          data: { full_name: fullName, sponsor_username: sponsorUsername },
+          data: { full_name: fullName, phone: digits, sponsor_username: sponsorUsername },
         },
       })
 
@@ -107,6 +116,20 @@ export function SignupForm({ sponsorUsername }: { sponsorUsername: string | null
           <span className="mt-1 block px-1 text-xs text-gray-400">
             Seu código de afiliado e o endereço da sua loja são criados
             automaticamente a partir do seu nome.
+          </span>
+        </label>
+
+        <label className="block">
+          <input
+            name="phone"
+            type="tel"
+            inputMode="tel"
+            placeholder="WhatsApp com DDD"
+            required
+            className={FIELD}
+          />
+          <span className="mt-1 block px-1 text-xs text-gray-400">
+            É por aqui que a equipe fala com você sobre pedidos e comissões.
           </span>
         </label>
 

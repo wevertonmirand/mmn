@@ -118,7 +118,8 @@ conteúdo de cada arquivo, **nesta ordem**:
 12. `supabase/migrations/20260730001200_refresh_commerce_schema.sql`
 13. `supabase/migrations/20260730001300_repair_commission_rls.sql`
 14. `supabase/migrations/20260730001400_order_dispatch.sql`
-15. `supabase/seed.sql`
+15. `supabase/migrations/20260730001500_profile_and_gallery.sql`
+16. `supabase/seed.sql`
 
 Pode rodar cada um separadamente ou tudo de uma vez. O SQL é **idempotente**:
 rodar de novo não duplica nada nem dá erro.
@@ -271,6 +272,30 @@ usam `create_crm_sale` e nunca geram pontos ou comissão.
 No dashboard, o afiliado pode personalizar o nome usado em `/cadastro?ref=nome` e `/loja/nome`.
 A disponibilidade é verificada antes do envio e confirmada atomicamente pela RPC
 `change_my_username`, de modo que dois usuários nunca consigam reservar o mesmo nome.
+
+### Perfil do afiliado
+
+`/perfil` reúne link de indicação, histórico de vendas, redefinição de senha,
+sugestões de melhoria e saída da conta.
+
+O **link de indicação é escolhido uma única vez**: depois de definido ele já
+foi divulgado, e mudar quebraria os links que o afiliado espalhou.
+`change_my_username` grava `username_changed_at` e recusa a segunda tentativa.
+
+O **WhatsApp é obrigatório no formulário de cadastro**, não no banco. Um
+`raise` no trigger derrubaria todo caminho legítimo que não passa pela tela —
+o "Add user" do painel do Supabase, o script de admin de teste e os seeds —
+deixando o projeto sem como criar o primeiro usuário. O trigger normaliza e
+guarda o telefone quando ele vem.
+
+### Fotos dos produtos
+
+Até **3 fotos por produto**, em `products.images`. A primeira é a capa, e um
+trigger mantém `image_url` sincronizada com ela para o código que lê a coluna
+antiga continuar funcionando. Posições vazias são descartadas na gravação.
+
+Exibidas com `object-contain`: cortar a foto engana o cliente sobre o que está
+comprando.
 
 ### Os dois tipos de pedido
 

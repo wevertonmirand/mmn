@@ -1,2 +1,23 @@
-import {createClient} from '@/lib/supabase/server';import {Card,CardTitle} from '@/components/ui/Card';import {SubmitForm} from '@/components/commerce/SubmitForm';import {saveCommissionsAction} from '@/lib/actions/internal-commerce';import type {Settings} from '@/lib/types'
-export default async function AdminComissoes(){const s=await createClient();const{data}=await s.from('settings').select('*').eq('id',true).single();const x=data as Settings;return <Card><CardTitle>Comissões da rede</CardTitle><p className="mb-4 text-sm text-gray-500">Aplicadas como snapshot sobre o valor pago. A soma máxima é 100%.</p><SubmitForm action={saveCommissionsAction} label="Salvar percentuais">{[1,2,3,4,5].map(n=><label key={n} className="flex items-center justify-between">Nível {n}<input className="w-28 rounded-xl border p-2" type="number" name={`level_${n}`} min="0" max="100" step="0.01" defaultValue={x[`commission_level_${n}` as keyof Settings] as number}/></label>)}</SubmitForm></Card>}
+import { createClient } from '@/lib/supabase/server'
+import { CommissionForm } from '@/components/admin/CommissionForm'
+import type { Settings } from '@/lib/types'
+
+export const dynamic = 'force-dynamic'
+
+export default async function AdminComissoesPage() {
+  const supabase = await createClient()
+  const { data } = await supabase.from('settings').select('*').eq('id', true).single()
+  const settings = data as Settings
+
+  return (
+    <CommissionForm
+      initial={[
+        Number(settings.commission_level_1),
+        Number(settings.commission_level_2),
+        Number(settings.commission_level_3),
+        Number(settings.commission_level_4),
+        Number(settings.commission_level_5),
+      ]}
+    />
+  )
+}
